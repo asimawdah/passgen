@@ -1,0 +1,46 @@
+{
+  "name": "@asimawdah/passgen",
+  "version": "1.0.2",
+  "description": "Secure password generator CLI",
+  "main": "index.js",
+  "bin": {
+    "passgen": "index.js"
+  },
+  "type": "module",
+  "preferGlobal": true,
+  "keywords": [
+    "password",
+    "cli",
+    "generator",
+    "security",
+    "passgen",
+    "password-generator"
+  ],
+  "author": "asimawdah",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asimawdah/passgen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/asimawdah/passgen/issues"
+  },
+  "homepage": "https://github.com/asimawdah/passgen#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "yargs": "^18.0.0"
+  }
+}
