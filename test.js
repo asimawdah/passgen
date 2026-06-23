@@ -38,6 +38,14 @@ const decimalLengthRun = runPassgen(["--length", "3.5"]);
 assert.notEqual(decimalLengthRun.status, 0, "decimal length should fail");
 assert.match(decimalLengthRun.stderr, /Password length must be an integer/);
 
+const unknownFlagModeRun = runPassgen(["--mode", "maximum"]);
+assert.notEqual(unknownFlagModeRun.status, 0, "unknown --mode value should fail");
+assert.match(unknownFlagModeRun.stderr, /Unknown mode/);
+
+const unknownPositionalModeRun = runPassgen(["maximum"]);
+assert.notEqual(unknownPositionalModeRun.status, 0, "unknown positional mode should fail");
+assert.match(unknownPositionalModeRun.stderr, /Unknown mode/);
+
 const noCharsetRun = runPassgen(["--upper", "false", "--lower", "false", "--numbers", "false", "--symbols", "false"]);
 assert.notEqual(noCharsetRun.status, 0, "disabling every character set should fail");
 assert.match(noCharsetRun.stderr, /No character sets enabled/);
