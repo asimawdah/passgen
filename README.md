@@ -11,6 +11,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Uses Node's built-in `crypto.randomInt` for secure randomness
 - Preset strength modes (weak, medium, strong, ultra)
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
+- Validates preset names, password length, and empty character sets before generating output
 - Small single-file implementation for easy auditing and embedding
 
 ## Installation
@@ -43,7 +44,6 @@ passgen
 
 Result: `Y@XE4+mNi1dh`
 
-
 Using flags:
 
 ```bash
@@ -53,7 +53,7 @@ passgen -l 20 -u true -lc true -n true -s false
 
 ### Flags
 
-- `-l`, `--length` (number): Password length (default: 12)
+- `-l`, `--length` (number): Password length (default: 12; valid range: 1-4096)
 - `-u`, `--upper` (boolean): Include uppercase letters
 - `-lc`, `--lower` (boolean): Include lowercase letters
 - `-n`, `--numbers` (boolean): Include digits
@@ -72,12 +72,36 @@ passgen --mode strong
 
 # Custom length without symbols
 passgen -l 16 -s false
+
+# Generate digits only
+passgen -l 24 -u false -lc false -n true -s false
 ```
+
+## Validation behavior
+
+passgen exits with a non-zero status and writes the error to stderr when:
+
+- `--length` is not an integer between 1 and 4096
+- `--mode` or the positional preset is not one of `weak`, `medium`, `strong`, or `ultra`
+- all character sets are disabled at the same time
+
+This keeps automation and scripts safer because invalid input fails loudly instead of producing surprising output.
+
+## Testing
+
+Run the CLI smoke tests before publishing or changing generation behavior:
+
+```bash
+npm test
+```
+
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, and empty charset failures.
 
 ## Security notes
 
 - passgen relies on Node's `crypto` for random number generation; do not use non-cryptographic RNGs for password generation.
 - Avoid piping passwords through logs or unencrypted channels.
+- Prefer long passwords generated with the `strong` or `ultra` preset for important accounts.
 
 ## Contributing
 
