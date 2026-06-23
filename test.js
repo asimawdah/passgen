@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -8,23 +8,38 @@ const __dirname = dirname(__filename);
 const cliPath = join(__dirname, "index.js");
 
 function runPassgen(args = []) {
-  return execFileSync(process.execPath, [cliPath, ...args], {
+  return spawnSync(process.execPath, [cliPath, ...args], {
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  }).trim();
+  });
 }
 
-const defaultPassword = runPassgen();
-assert.equal(defaultPassword.length, 12, "default password should be 12 characters long");
+const defaultRun = runPassgen();
+assert.equal(defaultRun.status, 0, defaultRun.stderr);
+assert.equal(defaultRun.stdout.trim().length, 12, "default password should be 12 characters long");
 
-const customPassword = runPassgen(["--length", "20", "--symbols", "false"]);
-assert.equal(customPassword.length, 20, "custom length should be respected");
-assert.doesNotMatch(customPassword, /[!@#$%^&*()\-_=+\[\]{}<>?/|]/, "symbols should be excluded when disabled");
+const customLengthRun = runPassgen(["--length", "20", "--symbols", "false"]);
+assert.equal(customLengthRun.status, 0, customLengthRun.stderr);
+assert.equal(customLengthRun.stdout.trim().length, 20, "custom length should be respected");
+assert.doesNotMatch(customLengthRun.stdout.trim(), /[!@#$%^&*()\-_=+\[\]{}<>?/|]/, "symbols should be excluded when disabled");
 
-const ultraPassword = runPassgen(["ultra"]);
-assert.equal(ultraPassword.length, 32, "ultra positional preset should generate 32 characters");
+const ultraRun = runPassgen(["ultra"]);
+assert.equal(ultraRun.status, 0, ultraRun.stderr);
+assert.equal(ultraRun.stdout.trim().length, 32, "ultra positional preset should generate 32 characters");
 
-const lowerOnlyPassword = runPassgen(["--upper", "false", "--numbers", "false", "--symbols", "false"]);
-assert.match(lowerOnlyPassword, /^[a-z]+$/, "lower-only options should restrict the character set");
+const lowerOnlyRun = runPassgen(["--upper", "false", "--numbers", "false", "--symbols", "false"]);
+assert.equal(lowerOnlyRun.status, 0, lowerOnlyRun.stderr);
+assert.match(lowerOnlyRun.stdout.trim(), /^[a-z]+$/, "lower-only options should restrict the character set");
+
+const invalidLengthRun = runPassgen(["--length", "0"]);
+assert.notEqual(invalidLengthRun.status, 0, "zero length should fail");
+assert.match(invalidLengthRun.stderr, /Password length must be an integer/);
+
+const decimalLengthRun = runPassgen(["--length", "3.5"]);
+assert.notEqual(decimalLengthRun.status, 0, "decimal length should fail");
+assert.match(decimalLengthRun.stderr, /Password length must be an integer/);
+
+const noCharsetRun = runPassgen(["--upper", "false", "--lower", "false", "--numbers", "false", "--symbols", "false"]);
+assert.notEqual(noCharsetRun.status, 0, "disabling every character set should fail");
+assert.match(noCharsetRun.stderr, /No character sets enabled/);
 
 console.log("passgen CLI smoke tests passed");
