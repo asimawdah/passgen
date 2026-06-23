@@ -94,7 +94,12 @@ let config = {
 };
 
 // apply preset first
-if (argv.mode && presets[argv.mode]) {
+if (argv.mode) {
+    if (!Object.hasOwn(presets, argv.mode)) {
+        console.error(chalk.red(`❌ Unknown mode "${argv.mode}". Use one of: ${Object.keys(presets).join(", ")}`));
+        process.exit(1);
+    }
+
     config = { ...config, ...presets[argv.mode] };
 }
 
