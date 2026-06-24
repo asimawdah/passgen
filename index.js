@@ -6,6 +6,8 @@ import { hideBin } from "yargs/helpers";
 import chalk from "chalk";
 
 const rawArgs = hideBin(process.argv);
+const MIN_LENGTH = 1;
+const MAX_LENGTH = 4096;
 
 // normalize args: convert single-dash multi-letter flags (e.g. `-lc`) to
 // double-dash form (`--lc`) so users can type `-lc false` as they did.
@@ -92,12 +94,22 @@ let config = {
 };
 
 // apply preset first
-if (argv.mode && presets[argv.mode]) {
+if (argv.mode) {
+    if (!Object.hasOwn(presets, argv.mode)) {
+        console.error(chalk.red(`❌ Unknown mode "${argv.mode}". Use one of: ${Object.keys(presets).join(", ")}`));
+        process.exit(1);
+    }
+
     config = { ...config, ...presets[argv.mode] };
 }
 
 // override by user (FULL CONTROL)
-if (argv.length) config.length = argv.length;
+if (argv.length !== undefined) config.length = argv.length;
+
+if (!Number.isInteger(config.length) || config.length < MIN_LENGTH || config.length > MAX_LENGTH) {
+    console.error(chalk.red(`❌ Password length must be an integer between ${MIN_LENGTH} and ${MAX_LENGTH}`));
+    process.exit(1);
+}
 
 if (argv.upper !== undefined) config.upper = argv.upper;
 if (argv.lower !== undefined) config.lower = argv.lower;
@@ -113,7 +125,7 @@ if (config.numbers) charset += sets.numbers;
 if (config.symbols) charset += sets.symbols;
 
 if (!charset) {
-    console.log(chalk.red("❌ No character sets enabled"));
+    console.error(chalk.red("❌ No character sets enabled"));
     process.exit(1);
 }
 
