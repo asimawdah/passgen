@@ -77,6 +77,23 @@ passgen -l 16 -s false
 passgen -l 24 -u false -lc false -n true -s false
 ```
 
+## Shell-safe usage
+
+Generated passwords can contain symbols that have special meaning in shells. Capture or paste them carefully so they are not expanded, split, or leaked into logs.
+
+```bash
+# Capture a password for immediate local use without printing it again.
+PASSWORD="$(passgen ultra)"
+
+# Pass it to a command through stdin when the receiving tool supports it.
+printf '%s\n' "$PASSWORD" | your-password-manager import --stdin
+
+# Clear the variable when you are done using it.
+unset PASSWORD
+```
+
+Avoid adding generated passwords directly to shell history, CI logs, issue comments, or unencrypted files. When sharing commands in documentation or bug reports, use placeholders such as `<generated-password>` instead of real generated values.
+
 ## Validation behavior
 
 passgen exits with a non-zero status and writes the error to stderr when:
