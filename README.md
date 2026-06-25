@@ -104,6 +104,18 @@ passgen exits with a non-zero status and writes the error to stderr when:
 
 This keeps automation and scripts safer because invalid input fails loudly instead of producing surprising output.
 
+### Recovery hints
+
+When validation fails, passgen prints a short hint after the error so the next action is clear:
+
+| Problem | Example | Suggested fix |
+| --- | --- | --- |
+| Invalid length | `passgen --length 0` | Use an integer in the supported range, such as `passgen --length 20`. |
+| Unknown preset | `passgen maximum` | Use `weak`, `medium`, `strong`, or `ultra`, or run `passgen --help`. |
+| Empty character set | `passgen --upper false --lower false --numbers false --symbols false` | Enable at least one character set. |
+
+These hints are written to stderr, while generated passwords remain on stdout. This makes `--info` and validation output safer for scripts that capture only the generated password.
+
 ## Testing
 
 Run the CLI smoke tests before publishing or changing generation behavior:
@@ -112,7 +124,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, and empty charset failures.
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, validation recovery hints, and `--info` output separation between stdout and stderr.
 
 ## Security notes
 
