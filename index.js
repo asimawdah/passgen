@@ -19,6 +19,14 @@ const normalizedArgs = rawArgs.map((arg) => {
     return arg;
 });
 
+function fail(message, hint) {
+    console.error(chalk.red(`❌ ${message}`));
+    if (hint) {
+        console.error(chalk.gray(`Hint: ${hint}`));
+    }
+    process.exit(1);
+}
+
 const argv = yargs(normalizedArgs)
     .option("length", {
         alias: "l",
@@ -96,8 +104,10 @@ let config = {
 // apply preset first
 if (argv.mode) {
     if (!Object.hasOwn(presets, argv.mode)) {
-        console.error(chalk.red(`❌ Unknown mode "${argv.mode}". Use one of: ${Object.keys(presets).join(", ")}`));
-        process.exit(1);
+        fail(
+            `Unknown mode "${argv.mode}". Use one of: ${Object.keys(presets).join(", ")}`,
+            "Run `passgen --help` to see presets and flags.",
+        );
     }
 
     config = { ...config, ...presets[argv.mode] };
@@ -107,8 +117,10 @@ if (argv.mode) {
 if (argv.length !== undefined) config.length = argv.length;
 
 if (!Number.isInteger(config.length) || config.length < MIN_LENGTH || config.length > MAX_LENGTH) {
-    console.error(chalk.red(`❌ Password length must be an integer between ${MIN_LENGTH} and ${MAX_LENGTH}`));
-    process.exit(1);
+    fail(
+        `Password length must be an integer between ${MIN_LENGTH} and ${MAX_LENGTH}`,
+        "Use `--length 20` or a preset such as `passgen strong`.",
+    );
 }
 
 if (argv.upper !== undefined) config.upper = argv.upper;
@@ -125,8 +137,10 @@ if (config.numbers) charset += sets.numbers;
 if (config.symbols) charset += sets.symbols;
 
 if (!charset) {
-    console.error(chalk.red("❌ No character sets enabled"));
-    process.exit(1);
+    fail(
+        "No character sets enabled",
+        "Enable at least one of --lower, --upper, --numbers, or --symbols.",
+    );
 }
 
 // ---------------- secure generator ----------------
