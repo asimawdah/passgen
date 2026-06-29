@@ -30,6 +30,13 @@ const lowerOnlyRun = runPassgen(["--upper", "false", "--numbers", "false", "--sy
 assert.equal(lowerOnlyRun.status, 0, lowerOnlyRun.stderr);
 assert.match(lowerOnlyRun.stdout.trim(), /^[a-z]+$/, "lower-only options should restrict the character set");
 
+const allSetsMinimumRun = runPassgen(["--length", "4"]);
+assert.equal(allSetsMinimumRun.status, 0, allSetsMinimumRun.stderr);
+assert.match(allSetsMinimumRun.stdout.trim(), /[a-z]/, "enabled lowercase set should be represented");
+assert.match(allSetsMinimumRun.stdout.trim(), /[A-Z]/, "enabled uppercase set should be represented");
+assert.match(allSetsMinimumRun.stdout.trim(), /[0-9]/, "enabled numbers set should be represented");
+assert.match(allSetsMinimumRun.stdout.trim(), /[!@#$%^&*()\-_=+\[\]{}<>?/|]/, "enabled symbols set should be represented");
+
 const invalidLengthRun = runPassgen(["--length", "0"]);
 assert.notEqual(invalidLengthRun.status, 0, "zero length should fail");
 assert.match(invalidLengthRun.stderr, /Password length must be an integer/);
@@ -38,6 +45,12 @@ assert.match(invalidLengthRun.stderr, /Hint: Use `--length 20`/);
 const decimalLengthRun = runPassgen(["--length", "3.5"]);
 assert.notEqual(decimalLengthRun.status, 0, "decimal length should fail");
 assert.match(decimalLengthRun.stderr, /Password length must be an integer/);
+
+const tooShortForSetsRun = runPassgen(["--length", "3"]);
+assert.notEqual(tooShortForSetsRun.status, 0, "length shorter than enabled character sets should fail");
+assert.match(tooShortForSetsRun.stderr, /too short for 4 enabled character sets/);
+assert.match(tooShortForSetsRun.stderr, /Hint: Use --length 4/);
+assert.equal(tooShortForSetsRun.stdout, "", "class coverage validation errors should not print a password");
 
 const unknownFlagModeRun = runPassgen(["--mode", "maximum"]);
 assert.notEqual(unknownFlagModeRun.status, 0, "unknown --mode value should fail");
