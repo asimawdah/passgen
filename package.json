@@ -23,7 +23,8 @@
   },
   "files": [
     "index.js",
-    "README.md"
+    "README.md",
+    "SECURITY.md"
   ],
   "scripts": {
     "test": "node test.js"
