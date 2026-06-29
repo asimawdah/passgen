@@ -4,13 +4,15 @@
 
 > Secure, minimal, and fast command-line password generator for professionals.
 
-passgen is a compact Node.js CLI that produces cryptographically secure passwords using the Node `crypto` API. It provides sensible presets (weak, medium, strong, ultra) and fine-grained flags for including/excluding uppercase, lowercase, numbers, and symbols.
+passgen is a compact Node.js CLI that produces cryptographically secure passwords using the Node `crypto` API. It provides sensible presets (weak, medium, strong, ultra), fine-grained flags for including/excluding uppercase, lowercase, numbers, and symbols, and optional strength reports for safer review and automation.
 
 ## Highlights
 
 - Uses Node's built-in `crypto.randomInt` for secure randomness
 - Preset strength modes (weak, medium, strong, ultra)
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
+- Optional readable and JSON strength reports with entropy, enabled sets, and warnings
+- Local file export with overwrite protection
 - Validates preset names, password length, and empty character sets before generating output
 - Small single-file implementation for easy auditing and embedding
 
@@ -60,6 +62,10 @@ passgen -l 20 -u true -lc true -n true -s false
 - `-s`, `--symbols` (boolean): Include symbols
 - `--mode` (string): Preset mode — `weak | medium | strong | ultra`
 - `-i`, `--info` (boolean): Show password strength and entropy info
+- `-r`, `--report` (boolean): Show a readable strength report on stderr
+- `--format` (string): Output format — `text | json` (default: `text`)
+- `-o`, `--output` (string): Save the current output format to a local file
+- `--force` (boolean): Allow `--output` to overwrite an existing file
 
 ## Examples
 
@@ -75,7 +81,34 @@ passgen -l 16 -s false
 
 # Generate digits only
 passgen -l 24 -u false -lc false -n true -s false
+
+# Show a readable strength report while keeping stdout password-only
+passgen strong --report
+
+# Emit password and metadata as JSON
+passgen ultra --format json
+
+# Export text output or JSON output to a local file
+passgen strong --output ./generated.txt
+passgen ultra --format json --output ./generated-report.json
 ```
+
+## Strength reports and exports
+
+`--report` writes a human-readable report to stderr and keeps stdout as the generated password only. This preserves existing shell workflows such as `PASSWORD="$(passgen ultra --report)"`.
+
+`--format json` emits a JSON object containing:
+
+- `password`
+- `preset`
+- `length`
+- `charset_size`
+- `enabled_sets`
+- `entropy_bits`
+- `strength`
+- `warnings`
+
+`--output` saves the selected output format to a local file. Existing files are protected by default; use `--force` only when replacement is intentional. See [`docs/STRENGTH_REPORTS.md`](docs/STRENGTH_REPORTS.md) for details.
 
 ## Shell-safe usage
 
@@ -101,6 +134,7 @@ passgen exits with a non-zero status and writes the error to stderr when:
 - `--length` is not an integer between 1 and 4096
 - `--mode` or the positional preset is not one of `weak`, `medium`, `strong`, or `ultra`
 - all character sets are disabled at the same time
+- `--output` targets an existing file without `--force`
 
 This keeps automation and scripts safer because invalid input fails loudly instead of producing surprising output.
 
@@ -112,13 +146,14 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, and empty charset failures.
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON reports, and output-file overwrite protection.
 
 ## Security notes
 
 - passgen relies on Node's `crypto` for random number generation; do not use non-cryptographic RNGs for password generation.
 - Avoid piping passwords through logs or unencrypted channels.
 - Prefer long passwords generated with the `strong` or `ultra` preset for important accounts.
+- Treat JSON reports and exported files as sensitive because they include the generated password.
 
 ## Contributing
 
