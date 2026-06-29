@@ -64,8 +64,20 @@ assert.match(unknownPositionalModeRun.stderr, /Unknown mode/);
 const unknownOptionRun = runPassgen(["--lenght", "20"]);
 assert.notEqual(unknownOptionRun.status, 0, "unknown options should fail instead of generating a default password");
 assert.match(unknownOptionRun.stderr, /Unknown argument: lenght|Unknown arguments: lenght/);
-assert.match(unknownOptionRun.stderr, /Hint: Run `passgen --help`/);
+assert.match(unknownOptionRun.stderr, /Hint: Did you mean --length\?/);
 assert.equal(unknownOptionRun.stdout, "", "validation errors should not print a generated password to stdout");
+
+const unknownShortOptionRun = runPassgen(["-lenght", "20"]);
+assert.notEqual(unknownShortOptionRun.status, 0, "normalized typoed short options should fail");
+assert.match(unknownShortOptionRun.stderr, /Unknown argument: lenght|Unknown arguments: lenght/);
+assert.match(unknownShortOptionRun.stderr, /Hint: Did you mean --length\?/);
+assert.equal(unknownShortOptionRun.stdout, "", "normalized option validation errors should not print a password");
+
+const unknownFarOptionRun = runPassgen(["--password-size", "20"]);
+assert.notEqual(unknownFarOptionRun.status, 0, "unsupported unrelated options should fail");
+assert.match(unknownFarOptionRun.stderr, /Unknown argument: password-size|Unknown arguments: password-size/);
+assert.match(unknownFarOptionRun.stderr, /Hint: Run `passgen --help`/);
+assert.doesNotMatch(unknownFarOptionRun.stderr, /Did you mean/);
 
 const noCharsetRun = runPassgen(["--upper", "false", "--lower", "false", "--numbers", "false", "--symbols", "false"]);
 assert.notEqual(noCharsetRun.status, 0, "disabling every character set should fail");
