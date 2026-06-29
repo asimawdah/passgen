@@ -48,6 +48,12 @@ const unknownPositionalModeRun = runPassgen(["maximum"]);
 assert.notEqual(unknownPositionalModeRun.status, 0, "unknown positional mode should fail");
 assert.match(unknownPositionalModeRun.stderr, /Unknown mode/);
 
+const unknownOptionRun = runPassgen(["--lenght", "20"]);
+assert.notEqual(unknownOptionRun.status, 0, "unknown options should fail instead of generating a default password");
+assert.match(unknownOptionRun.stderr, /Unknown argument: lenght|Unknown arguments: lenght/);
+assert.match(unknownOptionRun.stderr, /Hint: Run `passgen --help`/);
+assert.equal(unknownOptionRun.stdout, "", "validation errors should not print a generated password to stdout");
+
 const noCharsetRun = runPassgen(["--upper", "false", "--lower", "false", "--numbers", "false", "--symbols", "false"]);
 assert.notEqual(noCharsetRun.status, 0, "disabling every character set should fail");
 assert.match(noCharsetRun.stderr, /No character sets enabled/);
