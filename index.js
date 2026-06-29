@@ -133,12 +133,15 @@ if (argv.numbers !== undefined) config.numbers = argv.numbers;
 if (argv.symbols !== undefined) config.symbols = argv.symbols;
 
 // ---------------- build charset ----------------
+const enabledSets = [];
 let charset = "";
 
-if (config.lower) charset += sets.lower;
-if (config.upper) charset += sets.upper;
-if (config.numbers) charset += sets.numbers;
-if (config.symbols) charset += sets.symbols;
+for (const [name, chars] of Object.entries(sets)) {
+    if (config[name]) {
+        enabledSets.push({ name, chars });
+        charset += chars;
+    }
+}
 
 if (!charset) {
     fail(
@@ -147,16 +150,38 @@ if (!charset) {
     );
 }
 
+if (config.length < enabledSets.length) {
+    const enabledNames = enabledSets.map((set) => set.name).join(", ");
+    fail(
+        `Password length ${config.length} is too short for ${enabledSets.length} enabled character sets (${enabledNames})`,
+        `Use --length ${enabledSets.length} or disable character sets you do not need.`,
+    );
+}
+
+function randomChar(chars) {
+    return chars[crypto.randomInt(0, chars.length)];
+}
+
+function shuffle(chars) {
+    const shuffled = [...chars];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+        const j = crypto.randomInt(0, i + 1);
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.join("");
+}
+
 // ---------------- secure generator ----------------
 function generate(len) {
-    let pass = "";
+    const requiredChars = enabledSets.map((set) => randomChar(set.chars));
+    const remainingLength = len - requiredChars.length;
+    const remainingChars = [];
 
-    for (let i = 0; i < len; i++) {
-        const idx = crypto.randomInt(0, charset.length);
-        pass += charset[idx];
+    for (let i = 0; i < remainingLength; i += 1) {
+        remainingChars.push(randomChar(charset));
     }
 
-    return pass;
+    return shuffle([...requiredChars, ...remainingChars]);
 }
 
 // ---------------- entropy ----------------
