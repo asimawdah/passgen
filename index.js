@@ -67,6 +67,10 @@ const argv = yargs(normalizedArgs)
         default: false,
         describe: "Show password strength and entropy info",
     })
+    .strictOptions()
+    .fail((message) => {
+        fail(message, "Run `passgen --help` to see supported options and examples.");
+    })
     .help()
     .argv;
 
