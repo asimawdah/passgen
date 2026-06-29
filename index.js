@@ -86,8 +86,9 @@ const argv = yargs(normalizedArgs)
     .help()
     .argv;
 
-// support positional preset (e.g., `node index.js ultra`)
-const firstPositional = normalizedArgs.find((a) => !a.startsWith("-"));
+// support positional preset (e.g., `node index.js ultra`) without mistaking
+// option values such as `--length 20` or `--output ./file` for presets.
+const firstPositional = argv._.length ? String(argv._[0]) : undefined;
 if (firstPositional && !argv.mode) {
     argv.mode = firstPositional;
 }
