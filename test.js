@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -15,7 +17,7 @@ function runPassgen(args = []) {
 
 const defaultRun = runPassgen();
 assert.equal(defaultRun.status, 0, defaultRun.stderr);
-assert.equal(defaultRun.stdout.trim().length, 12, "default password should be 12 characters long");
+assert.equal(defaultRun.stdout.trim().length, 12, "default output should be 12 characters long");
 
 const customLengthRun = runPassgen(["--length", "20", "--symbols", "false"]);
 assert.equal(customLengthRun.status, 0, customLengthRun.stderr);
@@ -49,5 +51,44 @@ assert.match(unknownPositionalModeRun.stderr, /Unknown mode/);
 const noCharsetRun = runPassgen(["--upper", "false", "--lower", "false", "--numbers", "false", "--symbols", "false"]);
 assert.notEqual(noCharsetRun.status, 0, "disabling every character set should fail");
 assert.match(noCharsetRun.stderr, /No character sets enabled/);
+
+const reportRun = runPassgen(["strong", "--report"]);
+assert.equal(reportRun.status, 0, reportRun.stderr);
+assert.equal(reportRun.stdout.trim().length, 18, "--report should keep stdout script-friendly");
+assert.match(reportRun.stderr, /Password Strength Report/);
+assert.match(reportRun.stderr, /Entropy:/);
+assert.match(reportRun.stderr, /Strength:/);
+
+const jsonRun = runPassgen(["--length", "16", "--format", "json"]);
+assert.equal(jsonRun.status, 0, jsonRun.stderr);
+const jsonReport = JSON.parse(jsonRun.stdout);
+assert.equal(jsonReport.password.length, 16, "JSON output should include the generated value");
+assert.equal(jsonReport.length, 16);
+assert.equal(typeof jsonReport.entropy_bits, "number");
+assert.ok(["Weak", "Medium", "Strong", "Ultra"].includes(jsonReport.strength));
+assert.ok(Array.isArray(jsonReport.enabled_sets));
+assert.ok(Array.isArray(jsonReport.warnings));
+
+const tempDir = mkdtempSync(join(tmpdir(), "passgen-test-"));
+try {
+  const textPath = join(tempDir, "value.txt");
+  const exportRun = runPassgen(["--length", "15", "--output", textPath]);
+  assert.equal(exportRun.status, 0, exportRun.stderr);
+  assert.equal(exportRun.stdout.trim().length, 15);
+  assert.equal(readFileSync(textPath, "utf8").trim().length, 15, "text export should write the generated value");
+
+  const noOverwriteRun = runPassgen(["--output", textPath]);
+  assert.notEqual(noOverwriteRun.status, 0, "existing output file should not be overwritten by default");
+  assert.match(noOverwriteRun.stderr, /already exists/);
+
+  const jsonPath = join(tempDir, "report.json");
+  const jsonExportRun = runPassgen(["ultra", "--format", "json", "--output", jsonPath]);
+  assert.equal(jsonExportRun.status, 0, jsonExportRun.stderr);
+  const exportedReport = JSON.parse(readFileSync(jsonPath, "utf8"));
+  assert.equal(exportedReport.preset, "ultra");
+  assert.equal(exportedReport.length, 32);
+} finally {
+  rmSync(tempDir, { recursive: true, force: true });
+}
 
 console.log("passgen CLI smoke tests passed");
