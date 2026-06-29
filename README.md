@@ -11,7 +11,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Uses Node's built-in `crypto.randomInt` for secure randomness
 - Preset strength modes (weak, medium, strong, ultra)
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
-- Validates preset names, password length, and empty character sets before generating output
+- Validates preset names, password length, empty character sets, and unknown options before generating output
 - Small single-file implementation for easy auditing and embedding
 
 ## Installation
@@ -101,6 +101,7 @@ passgen exits with a non-zero status and writes the error to stderr when:
 - `--length` is not an integer between 1 and 4096
 - `--mode` or the positional preset is not one of `weak`, `medium`, `strong`, or `ultra`
 - all character sets are disabled at the same time
+- an unknown option is provided, such as a typo in `--length`
 
 This keeps automation and scripts safer because invalid input fails loudly instead of producing surprising output.
 
@@ -113,6 +114,7 @@ When validation fails, passgen prints a short hint after the error so the next a
 | Invalid length | `passgen --length 0` | Use an integer in the supported range, such as `passgen --length 20`. |
 | Unknown preset | `passgen maximum` | Use `weak`, `medium`, `strong`, or `ultra`, or run `passgen --help`. |
 | Empty character set | `passgen --upper false --lower false --numbers false --symbols false` | Enable at least one character set. |
+| Unknown option | `passgen --lenght 20` | Fix the option name or run `passgen --help` to review supported flags. |
 
 These hints are written to stderr, while generated passwords remain on stdout. This makes `--info` and validation output safer for scripts that capture only the generated password.
 
@@ -124,13 +126,14 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, validation recovery hints, and `--info` output separation between stdout and stderr.
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, unknown options, empty charset failures, validation recovery hints, and `--info` output separation between stdout and stderr.
 
 ## Security notes
 
 - passgen relies on Node's `crypto` for random number generation; do not use non-cryptographic RNGs for password generation.
 - Avoid piping passwords through logs or unencrypted channels.
 - Prefer long passwords generated with the `strong` or `ultra` preset for important accounts.
+- Treat generated passwords as secrets immediately; do not paste real outputs into GitHub issues, pull requests, CI logs, or screenshots.
 
 ## Contributing
 
