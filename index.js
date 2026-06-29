@@ -8,6 +8,48 @@ import chalk from "chalk";
 const rawArgs = hideBin(process.argv);
 const MIN_LENGTH = 1;
 const MAX_LENGTH = 4096;
+const SUPPORTED_OPTIONS = ["length", "upper", "lower", "numbers", "symbols", "mode", "info", "help"];
+
+function editDistance(a, b) {
+    const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+
+    for (let i = 0; i <= a.length; i += 1) dp[i][0] = i;
+    for (let j = 0; j <= b.length; j += 1) dp[0][j] = j;
+
+    for (let i = 1; i <= a.length; i += 1) {
+        for (let j = 1; j <= b.length; j += 1) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+                dp[i - 1][j] + 1,
+                dp[i][j - 1] + 1,
+                dp[i - 1][j - 1] + cost,
+            );
+        }
+    }
+
+    return dp[a.length][b.length];
+}
+
+function suggestOption(option) {
+    if (!option) return null;
+
+    const normalized = option.replace(/^-+/, "");
+    let best = null;
+
+    for (const supportedOption of SUPPORTED_OPTIONS) {
+        const distance = editDistance(normalized, supportedOption);
+        if (!best || distance < best.distance) {
+            best = { option: supportedOption, distance };
+        }
+    }
+
+    return best && best.distance <= 2 ? best.option : null;
+}
+
+function extractUnknownOption(message) {
+    const match = message.match(/Unknown arguments?:\s+([^,\s]+)/i);
+    return match ? match[1].replace(/^--?/, "") : null;
+}
 
 // normalize args: convert single-dash multi-letter flags (e.g. `-lc`) to
 // double-dash form (`--lc`) so users can type `-lc false` as they did.
@@ -69,7 +111,12 @@ const argv = yargs(normalizedArgs)
     })
     .strictOptions()
     .fail((message) => {
-        fail(message, "Run `passgen --help` to see supported options and examples.");
+        const unknownOption = extractUnknownOption(message);
+        const suggestion = suggestOption(unknownOption);
+        const suggestionHint = suggestion
+            ? `Did you mean --${suggestion}? Run \`passgen --help\` to see supported options and examples.`
+            : "Run `passgen --help` to see supported options and examples.";
+        fail(message, suggestionHint);
     })
     .help()
     .argv;
