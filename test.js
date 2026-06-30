@@ -67,6 +67,18 @@ const unknownPositionalModeRun = runPassgen(["maximum"]);
 assert.notEqual(unknownPositionalModeRun.status, 0, "unknown positional mode should fail");
 assert.match(unknownPositionalModeRun.stderr, /Unknown mode/);
 
+const extraPositionalRun = runPassgen(["strong", "extra"]);
+assert.notEqual(extraPositionalRun.status, 0, "extra positional arguments should fail instead of being ignored");
+assert.match(extraPositionalRun.stderr, /Unexpected positional arguments: extra/);
+assert.match(extraPositionalRun.stderr, /Hint: Use at most one positional preset/);
+assert.equal(extraPositionalRun.stdout, "", "extra positional validation errors should not print a password");
+
+const mixedModeRun = runPassgen(["--mode", "strong", "ultra"]);
+assert.notEqual(mixedModeRun.status, 0, "mixing --mode with a positional preset should fail");
+assert.match(mixedModeRun.stderr, /Use either a positional preset or --mode/);
+assert.match(mixedModeRun.stderr, /not both forms/);
+assert.equal(mixedModeRun.stdout, "", "ambiguous mode validation errors should not print a password");
+
 const unknownOptionRun = runPassgen(["--lenght", "20"]);
 assert.notEqual(unknownOptionRun.status, 0, "unknown options should fail instead of generating a default password");
 assert.match(unknownOptionRun.stderr, /Unknown argument: lenght|Unknown arguments: lenght/);
