@@ -88,6 +88,12 @@ const argv = yargs(normalizedArgs)
         default: false,
         describe: "Allow --output to overwrite an existing file",
     })
+    .option("quiet", {
+        alias: "q",
+        type: "boolean",
+        default: false,
+        describe: "Suppress stdout when writing output to a file",
+    })
     .help()
     .argv;
 
@@ -138,6 +144,11 @@ if (argv.length !== undefined) config.length = argv.length;
 
 if (!Number.isInteger(config.length) || config.length < MIN_LENGTH || config.length > MAX_LENGTH) {
     console.error(chalk.red(`❌ Password length must be an integer between ${MIN_LENGTH} and ${MAX_LENGTH}`));
+    process.exit(1);
+}
+
+if (argv.quiet && !argv.output) {
+    console.error(chalk.red("❌ --quiet requires --output so generated content is not discarded."));
     process.exit(1);
 }
 
@@ -305,4 +316,6 @@ if (argv.output) {
     console.error(chalk.gray(`Saved generated ${savedKind} to ${argv.output}`));
 }
 
-process.stdout.write(stdoutContent);
+if (!argv.quiet) {
+    process.stdout.write(stdoutContent);
+}
