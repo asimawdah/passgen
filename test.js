@@ -46,6 +46,12 @@ const decimalLengthRun = runPassgen(["--length", "3.5"]);
 assert.notEqual(decimalLengthRun.status, 0, "decimal length should fail");
 assert.match(decimalLengthRun.stderr, /Password length must be an integer/);
 
+const missingLengthValueRun = runPassgen(["--length"]);
+assert.notEqual(missingLengthValueRun.status, 0, "missing length value should fail without generating a password");
+assert.match(missingLengthValueRun.stderr, /Not enough arguments following: length/);
+assert.match(missingLengthValueRun.stderr, /Hint: Provide a value for --length/);
+assert.equal(missingLengthValueRun.stdout, "", "missing option values should not print a generated password");
+
 const tooShortForSetsRun = runPassgen(["--length", "3"]);
 assert.notEqual(tooShortForSetsRun.status, 0, "length shorter than enabled character sets should fail");
 assert.match(tooShortForSetsRun.stderr, /too short for 4 enabled character sets/);
