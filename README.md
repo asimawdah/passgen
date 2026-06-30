@@ -12,6 +12,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Preset strength modes (weak, medium, strong, ultra)
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
 - Optional readable and JSON strength reports with entropy, enabled sets, and warnings
+- Redacted JSON reports for sharing strength metadata without exposing the generated password
 - Local file export with overwrite protection
 - Validates preset names, password length, and empty character sets before generating output
 - Small single-file implementation for easy auditing and embedding
@@ -64,6 +65,7 @@ passgen -l 20 -u true -lc true -n true -s false
 - `-i`, `--info` (boolean): Show password strength and entropy info
 - `-r`, `--report` (boolean): Show a readable strength report on stderr
 - `--format` (string): Output format — `text | json` (default: `text`)
+- `--redact` (boolean): Redact the generated password from JSON output and JSON exports
 - `-o`, `--output` (string): Save the current output format to a local file
 - `--force` (boolean): Allow `--output` to overwrite an existing file
 
@@ -88,9 +90,13 @@ passgen strong --report
 # Emit password and metadata as JSON
 passgen ultra --format json
 
+# Emit shareable metadata without exposing the generated password
+passgen ultra --format json --redact
+
 # Export text output or JSON output to a local file
 passgen strong --output ./generated.txt
 passgen ultra --format json --output ./generated-report.json
+passgen ultra --format json --redact --output ./redacted-report.json
 ```
 
 ## Strength reports and exports
@@ -107,6 +113,8 @@ passgen ultra --format json --output ./generated-report.json
 - `entropy_bits`
 - `strength`
 - `warnings`
+
+Use `--redact` with `--format json` when the metadata is meant for review, logs, bug reports, or screenshots. The JSON keeps the same metadata fields, replaces `password` with `[redacted]`, and adds `redacted: true`.
 
 `--output` saves the selected output format to a local file. Existing files are protected by default; use `--force` only when replacement is intentional. See [`docs/STRENGTH_REPORTS.md`](docs/STRENGTH_REPORTS.md) for details.
 
@@ -146,14 +154,14 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON reports, and output-file overwrite protection.
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON reports, redacted JSON reports, and output-file overwrite protection.
 
 ## Security notes
 
 - passgen relies on Node's `crypto` for random number generation; do not use non-cryptographic RNGs for password generation.
 - Avoid piping passwords through logs or unencrypted channels.
 - Prefer long passwords generated with the `strong` or `ultra` preset for important accounts.
-- Treat JSON reports and exported files as sensitive because they include the generated password.
+- Treat JSON reports and exported files as sensitive unless `--redact` is used and the original generated password is handled separately.
 
 ## Contributing
 
