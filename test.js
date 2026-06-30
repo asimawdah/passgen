@@ -52,6 +52,10 @@ const noCharsetRun = runPassgen(["--upper", "false", "--lower", "false", "--numb
 assert.notEqual(noCharsetRun.status, 0, "disabling every character set should fail");
 assert.match(noCharsetRun.stderr, /No character sets enabled/);
 
+const quietWithoutOutputRun = runPassgen(["--quiet"]);
+assert.notEqual(quietWithoutOutputRun.status, 0, "--quiet without --output should fail instead of discarding a password");
+assert.match(quietWithoutOutputRun.stderr, /--quiet requires --output/);
+
 const reportRun = runPassgen(["strong", "--report"]);
 assert.equal(reportRun.status, 0, reportRun.stderr);
 assert.equal(reportRun.stdout.trim().length, 18, "--report should keep stdout script-friendly");
@@ -89,12 +93,26 @@ try {
   assert.notEqual(noOverwriteRun.status, 0, "existing output file should not be overwritten by default");
   assert.match(noOverwriteRun.stderr, /already exists/);
 
+  const quietTextPath = join(tempDir, "quiet-value.txt");
+  const quietExportRun = runPassgen(["--length", "15", "--output", quietTextPath, "--quiet"]);
+  assert.equal(quietExportRun.status, 0, quietExportRun.stderr);
+  assert.equal(quietExportRun.stdout, "", "--quiet should suppress stdout when exporting to a file");
+  assert.equal(readFileSync(quietTextPath, "utf8").trim().length, 15, "quiet text export should still write the generated value");
+
   const jsonPath = join(tempDir, "report.json");
   const jsonExportRun = runPassgen(["ultra", "--format", "json", "--output", jsonPath]);
   assert.equal(jsonExportRun.status, 0, jsonExportRun.stderr);
   const exportedReport = JSON.parse(readFileSync(jsonPath, "utf8"));
   assert.equal(exportedReport.preset, "ultra");
   assert.equal(exportedReport.length, 32);
+
+  const quietJsonPath = join(tempDir, "quiet-report.json");
+  const quietJsonExportRun = runPassgen(["ultra", "--format", "json", "--output", quietJsonPath, "--quiet"]);
+  assert.equal(quietJsonExportRun.status, 0, quietJsonExportRun.stderr);
+  assert.equal(quietJsonExportRun.stdout, "", "--quiet should suppress JSON stdout when exporting to a file");
+  const quietJsonReport = JSON.parse(readFileSync(quietJsonPath, "utf8"));
+  assert.equal(quietJsonReport.preset, "ultra");
+  assert.equal(quietJsonReport.length, 32);
 
   const redactedJsonPath = join(tempDir, "redacted-report.json");
   const redactedJsonExportRun = runPassgen(["ultra", "--format", "json", "--redact", "--output", redactedJsonPath]);
