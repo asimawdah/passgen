@@ -11,7 +11,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Uses Node's built-in `crypto.randomInt` for secure randomness
 - Preset strength modes (weak, medium, strong, ultra)
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
-- Validates preset names, password length, empty character sets, unknown options, and impossible character-set coverage before generating output
+- Validates preset names, password length, missing option values, empty character sets, unknown options, and impossible character-set coverage before generating output
 - Ensures every enabled character set appears at least once when the requested length allows it
 - Small single-file implementation for easy auditing and embedding
 
@@ -117,6 +117,7 @@ Avoid adding generated passwords directly to shell history, CI logs, issue comme
 passgen exits with a non-zero status and writes the error to stderr when:
 
 - `--length` is not an integer between 1 and 4096
+- `--length` is provided without a value
 - `--length` is shorter than the number of enabled character sets
 - `--mode` or the positional preset is not one of `weak`, `medium`, `strong`, or `ultra`
 - all character sets are disabled at the same time
@@ -131,6 +132,7 @@ When validation fails, passgen prints a short hint after the error so the next a
 | Problem | Example | Suggested fix |
 | --- | --- | --- |
 | Invalid length | `passgen --length 0` | Use an integer in the supported range, such as `passgen --length 20`. |
+| Missing option value | `passgen --length` | Provide a value, for example `passgen --length 20`, or run `passgen --help`. |
 | Length too short for enabled sets | `passgen --length 3` | Increase length or disable a character set, such as `passgen --length 3 --symbols false`. |
 | Unknown preset | `passgen maximum` | Use `weak`, `medium`, `strong`, or `ultra`, or run `passgen --help`. |
 | Empty character set | `passgen --upper false --lower false --numbers false --symbols false` | Enable at least one character set. |
@@ -146,7 +148,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, required enabled-set coverage, invalid lengths, too-short character-set coverage failures, unknown modes, unknown options, empty charset failures, validation recovery hints, and `--info` output separation between stdout and stderr.
+The tests cover default output length, custom lengths, disabled character sets, required enabled-set coverage, invalid lengths, missing option values, too-short character-set coverage failures, unknown modes, unknown options, empty charset failures, validation recovery hints, and `--info` output separation between stdout and stderr.
 
 ## Security notes
 
