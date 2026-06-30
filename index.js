@@ -51,6 +51,25 @@ function extractUnknownOption(message) {
     return match ? match[1].replace(/^--?/, "") : null;
 }
 
+function extractMissingValueOption(message) {
+    const match = message.match(/Not enough arguments following:\s+([^\s]+)/i);
+    return match ? match[1].replace(/^--?/, "") : null;
+}
+
+function buildParserHint(message) {
+    const missingValueOption = extractMissingValueOption(message);
+    if (missingValueOption) {
+        return `Provide a value for --${missingValueOption}, for example \`passgen --${missingValueOption} 20\`, or run \`passgen --help\`.`;
+    }
+
+    const unknownOption = extractUnknownOption(message);
+    const suggestion = suggestOption(unknownOption);
+
+    return suggestion
+        ? `Did you mean --${suggestion}? Run \`passgen --help\` to see supported options and examples.`
+        : "Run `passgen --help` to see supported options and examples.";
+}
+
 // normalize args: convert single-dash multi-letter flags (e.g. `-lc`) to
 // double-dash form (`--lc`) so users can type `-lc false` as they did.
 const normalizedArgs = rawArgs.map((arg) => {
@@ -111,12 +130,7 @@ const argv = yargs(normalizedArgs)
     })
     .strictOptions()
     .fail((message) => {
-        const unknownOption = extractUnknownOption(message);
-        const suggestion = suggestOption(unknownOption);
-        const suggestionHint = suggestion
-            ? `Did you mean --${suggestion}? Run \`passgen --help\` to see supported options and examples.`
-            : "Run `passgen --help` to see supported options and examples.";
-        fail(message, suggestionHint);
+        fail(message, buildParserHint(message));
     })
     .help()
     .argv;
