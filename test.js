@@ -69,6 +69,14 @@ assert.ok(["Weak", "Medium", "Strong", "Ultra"].includes(jsonReport.strength));
 assert.ok(Array.isArray(jsonReport.enabled_sets));
 assert.ok(Array.isArray(jsonReport.warnings));
 
+const redactedJsonRun = runPassgen(["--length", "16", "--format", "json", "--redact"]);
+assert.equal(redactedJsonRun.status, 0, redactedJsonRun.stderr);
+const redactedJsonReport = JSON.parse(redactedJsonRun.stdout);
+assert.equal(redactedJsonReport.password, "[redacted]", "--redact should remove the generated value from JSON output");
+assert.equal(redactedJsonReport.redacted, true);
+assert.equal(redactedJsonReport.length, 16);
+assert.equal(typeof redactedJsonReport.entropy_bits, "number");
+
 const tempDir = mkdtempSync(join(tmpdir(), "passgen-test-"));
 try {
   const textPath = join(tempDir, "value.txt");
@@ -87,6 +95,14 @@ try {
   const exportedReport = JSON.parse(readFileSync(jsonPath, "utf8"));
   assert.equal(exportedReport.preset, "ultra");
   assert.equal(exportedReport.length, 32);
+
+  const redactedJsonPath = join(tempDir, "redacted-report.json");
+  const redactedJsonExportRun = runPassgen(["ultra", "--format", "json", "--redact", "--output", redactedJsonPath]);
+  assert.equal(redactedJsonExportRun.status, 0, redactedJsonExportRun.stderr);
+  const exportedRedactedReport = JSON.parse(readFileSync(redactedJsonPath, "utf8"));
+  assert.equal(exportedRedactedReport.password, "[redacted]");
+  assert.equal(exportedRedactedReport.redacted, true);
+  assert.equal(exportedRedactedReport.length, 32);
 } finally {
   rmSync(tempDir, { recursive: true, force: true });
 }
