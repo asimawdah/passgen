@@ -135,8 +135,23 @@ const argv = yargs(normalizedArgs)
     .help()
     .argv;
 
+const positionalPresets = argv._.map(String);
+if (positionalPresets.length > 1) {
+    fail(
+        `Unexpected positional arguments: ${positionalPresets.slice(1).join(", ")}`,
+        "Use at most one positional preset, such as `passgen ultra`, or run `passgen --help`.",
+    );
+}
+
+if (positionalPresets.length === 1 && argv.mode) {
+    fail(
+        "Use either a positional preset or --mode, not both",
+        "Use `passgen ultra` or `passgen --mode ultra`, not both forms in the same command.",
+    );
+}
+
 // support positional preset (e.g., `node index.js ultra`)
-const firstPositional = normalizedArgs.find((a) => !a.startsWith("-"));
+const firstPositional = positionalPresets[0];
 if (firstPositional && !argv.mode) {
     argv.mode = firstPositional;
 }
