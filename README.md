@@ -13,7 +13,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
 - Optional readable and JSON strength reports with entropy, enabled sets, and warnings
 - Redacted JSON reports for sharing strength metadata without exposing the generated password
-- Local file export with overwrite protection
+- Local file export with overwrite protection and optional quiet mode
 - Validates preset names, password length, and empty character sets before generating output
 - Small single-file implementation for easy auditing and embedding
 
@@ -67,6 +67,7 @@ passgen -l 20 -u true -lc true -n true -s false
 - `--format` (string): Output format — `text | json` (default: `text`)
 - `--redact` (boolean): Redact the generated password from JSON output and JSON exports
 - `-o`, `--output` (string): Save the current output format to a local file
+- `-q`, `--quiet` (boolean): Suppress stdout when `--output` is used
 - `--force` (boolean): Allow `--output` to overwrite an existing file
 
 ## Examples
@@ -97,6 +98,9 @@ passgen ultra --format json --redact
 passgen strong --output ./generated.txt
 passgen ultra --format json --output ./generated-report.json
 passgen ultra --format json --redact --output ./redacted-report.json
+
+# Export without also printing the generated value to stdout
+passgen ultra --output ./generated.txt --quiet
 ```
 
 ## Strength reports and exports
@@ -116,7 +120,7 @@ passgen ultra --format json --redact --output ./redacted-report.json
 
 Use `--redact` with `--format json` when the metadata is meant for review, logs, bug reports, or screenshots. The JSON keeps the same metadata fields, replaces `password` with `[redacted]`, and adds `redacted: true`.
 
-`--output` saves the selected output format to a local file. Existing files are protected by default; use `--force` only when replacement is intentional. See [`docs/STRENGTH_REPORTS.md`](docs/STRENGTH_REPORTS.md) for details.
+`--output` saves the selected output format to a local file. Existing files are protected by default; use `--force` only when replacement is intentional. Add `--quiet` when exporting should not also print the generated value or JSON report to stdout. See [`docs/STRENGTH_REPORTS.md`](docs/STRENGTH_REPORTS.md) for details.
 
 ## Shell-safe usage
 
@@ -143,6 +147,7 @@ passgen exits with a non-zero status and writes the error to stderr when:
 - `--mode` or the positional preset is not one of `weak`, `medium`, `strong`, or `ultra`
 - all character sets are disabled at the same time
 - `--output` targets an existing file without `--force`
+- `--quiet` is used without `--output`
 
 This keeps automation and scripts safer because invalid input fails loudly instead of producing surprising output.
 
@@ -154,7 +159,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON reports, redacted JSON reports, and output-file overwrite protection.
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON reports, redacted JSON reports, quiet exports, and output-file overwrite protection.
 
 ## Security notes
 
@@ -162,6 +167,7 @@ The tests cover default output length, custom lengths, disabled character sets, 
 - Avoid piping passwords through logs or unencrypted channels.
 - Prefer long passwords generated with the `strong` or `ultra` preset for important accounts.
 - Treat JSON reports and exported files as sensitive unless `--redact` is used and the original generated password is handled separately.
+- Use `--quiet` with `--output` when saving sensitive output should not also print it to terminal logs.
 
 ## Contributing
 
