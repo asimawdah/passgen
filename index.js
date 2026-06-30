@@ -78,6 +78,11 @@ const argv = yargs(normalizedArgs)
         type: "string",
         describe: "Write the generated password or JSON report to a file",
     })
+    .option("redact", {
+        type: "boolean",
+        default: false,
+        describe: "Redact the generated password from JSON output and JSON exports",
+    })
     .option("force", {
         type: "boolean",
         default: false,
@@ -223,6 +228,16 @@ function buildReport(password) {
     };
 }
 
+function buildSerializableReport(report) {
+    if (!argv.redact) return report;
+
+    return {
+        ...report,
+        password: "[redacted]",
+        redacted: true,
+    };
+}
+
 function renderReadableReport(report) {
     const strengthColors = {
         Weak: chalk.red,
@@ -277,7 +292,8 @@ function writeOutputFile(path, content) {
 // ---------------- output ----------------
 const result = generate(config.length);
 const report = buildReport(result);
-const stdoutContent = argv.format === "json" ? `${JSON.stringify(report, null, 2)}\n` : `${result}\n`;
+const serializableReport = buildSerializableReport(report);
+const stdoutContent = argv.format === "json" ? `${JSON.stringify(serializableReport, null, 2)}\n` : `${result}\n`;
 
 if (argv.info || argv.report) {
     console.error(renderReadableReport(report));
@@ -285,7 +301,8 @@ if (argv.info || argv.report) {
 
 if (argv.output) {
     writeOutputFile(argv.output, stdoutContent);
-    console.error(chalk.gray(`Saved generated ${argv.format === "json" ? "report" : "password"} to ${argv.output}`));
+    const savedKind = argv.format === "json" && argv.redact ? "redacted report" : argv.format === "json" ? "report" : "password";
+    console.error(chalk.gray(`Saved generated ${savedKind} to ${argv.output}`));
 }
 
 process.stdout.write(stdoutContent);
