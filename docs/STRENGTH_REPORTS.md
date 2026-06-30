@@ -62,9 +62,23 @@ passgen ultra --format json --output ./generated-report.json --force
 
 Where supported by the operating system, files are created with owner-only permissions.
 
+## Quiet exports
+
+By default, `--output` writes the selected output format to the file and still prints the same content to stdout. This keeps pipelines predictable.
+
+Use `--quiet` when the generated value or full JSON report should only be written to the target file and not echoed into terminal output, CI logs, or shell history captures.
+
+```bash
+passgen ultra --output ./generated.txt --quiet
+passgen ultra --format json --output ./generated-report.json --quiet
+```
+
+`--quiet` requires `--output`. This prevents accidentally generating a password that is discarded with no visible or saved result.
+
 ## Practical safety notes
 
 - Prefer `strong` or `ultra` for important accounts.
 - Treat JSON exports as sensitive because they include the generated value unless `--redact` is used.
 - Avoid public logs, screenshots, chat, issue comments, and unencrypted long-term storage.
+- Use `--quiet` with `--output` when saved secrets should not also appear in terminal output.
 - Prefer importing directly into a password manager when possible.
