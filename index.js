@@ -10,7 +10,7 @@ import chalk from "chalk";
 const rawArgs = hideBin(process.argv);
 const MIN_LENGTH = 1;
 const MAX_LENGTH = 4096;
-const REPORT_SCHEMA_VERSION = 1;
+const REPORT_SCHEMA_VERSION = 2;
 const FORMAT_VALUES = ["text", "json"];
 const OUTPUT_EXTENSIONS = {
     text: [".txt"],
@@ -268,6 +268,7 @@ function buildReport(password) {
         schema_version: REPORT_SCHEMA_VERSION,
         generated_at: new Date().toISOString(),
         password,
+        password_present: true,
         preset: argv.mode || "custom",
         length: config.length,
         charset_size: charset.length,
@@ -293,6 +294,7 @@ function buildSerializableReport(report) {
     return {
         ...baseReport,
         password: "[redacted]",
+        password_present: false,
         redacted: true,
     };
 }
