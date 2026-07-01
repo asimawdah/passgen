@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -121,6 +121,32 @@ try {
   assert.equal(exportedRedactedReport.password, "[redacted]");
   assert.equal(exportedRedactedReport.redacted, true);
   assert.equal(exportedRedactedReport.length, 32);
+
+  const nestedPath = join(tempDir, "nested", "exports", "value.txt");
+  const nestedExportRun = runPassgen(["--length", "15", "--output", nestedPath, "--quiet"]);
+  assert.equal(nestedExportRun.status, 0, nestedExportRun.stderr);
+  assert.equal(readFileSync(nestedPath, "utf8").trim().length, 15, "missing parent directories should be created safely");
+
+  const badTextExtensionRun = runPassgen(["--output", join(tempDir, "value.json")]);
+  assert.notEqual(badTextExtensionRun.status, 0, "text output should reject misleading JSON extension");
+  assert.match(badTextExtensionRun.stderr, /text output must use .txt extension/);
+
+  const badJsonExtensionRun = runPassgen(["--format", "json", "--output", join(tempDir, "report.txt")]);
+  assert.notEqual(badJsonExtensionRun.status, 0, "JSON output should reject misleading text extension");
+  assert.match(badJsonExtensionRun.stderr, /json output must use .json extension/);
+
+  const directoryTarget = join(tempDir, "directory-target.txt");
+  mkdirSync(directoryTarget);
+  const directoryTargetRun = runPassgen(["--output", directoryTarget]);
+  assert.notEqual(directoryTargetRun.status, 0, "directory output targets should fail before generation");
+  assert.match(directoryTargetRun.stderr, /Output path is a directory/);
+
+  const fileParent = join(tempDir, "file-parent");
+  writeFileSync(fileParent, "not a directory");
+  const fileParentRun = runPassgen(["--output", join(fileParent, "value.txt")]);
+  assert.notEqual(fileParentRun.status, 0, "file parent output targets should fail before generation");
+  assert.match(fileParentRun.stderr, /Output parent path is not a directory/);
+  assert.equal(existsSync(join(fileParent, "value.txt")), false, "invalid parent path should not create a partial output file");
 } finally {
   rmSync(tempDir, { recursive: true, force: true });
 }
