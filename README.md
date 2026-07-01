@@ -12,8 +12,9 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Preset strength modes (weak, medium, strong, ultra)
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
 - Validates preset names, password length, missing option values, empty character sets, unknown options, extra positional arguments, mixed preset styles, and impossible character-set coverage before generating output
+- Normalizes preset casing/spacing and suggests the nearest supported preset for common typos
 - Ensures every enabled character set appears at least once when the requested length allows it
-- `--info` reports the active character sets and whether coverage is guaranteed while keeping the generated password on stdout
+- `--info` reports the selected mode, active character sets, and whether coverage is guaranteed while keeping the generated password on stdout
 - Small single-file implementation for easy auditing and embedding
 
 ## Installation
@@ -61,7 +62,7 @@ passgen -l 20 -u true -lc true -n true -s false
 - `-n`, `--numbers` (boolean): Include digits
 - `-s`, `--symbols` (boolean): Include symbols
 - `--mode` (string): Preset mode — `weak | medium | strong | ultra`
-- `-i`, `--info` (boolean): Show password strength, entropy, enabled-set, and coverage info
+- `-i`, `--info` (boolean): Show password strength, entropy, selected mode, enabled-set, and coverage info
 
 ## Examples
 
@@ -71,6 +72,10 @@ passgen ultra
 
 # Strong preset
 passgen --mode strong
+
+# Preset names are normalized before validation
+passgen ULTRA
+passgen --mode " strong "
 
 # Custom length without symbols
 passgen -l 16 -s false
@@ -105,6 +110,7 @@ This prevents a short password from silently missing a selected character catego
 
 The diagnostics include:
 
+- `Mode`: selected preset, or `custom` when no preset was used
 - `Length`: requested output length
 - `Charset`: size of the active character pool
 - `Sets`: enabled sets, such as `lowercase, uppercase, numbers, symbols`
@@ -136,7 +142,7 @@ passgen exits with a non-zero status and writes the error to stderr when:
 - `--length` is not an integer between 1 and 4096
 - `--length` is provided without a value
 - `--length` is shorter than the number of enabled character sets
-- `--mode` or the positional preset is not one of `weak`, `medium`, `strong`, or `ultra`
+- `--mode` or the positional preset is not one of `weak`, `medium`, `strong`, or `ultra` after casing and surrounding whitespace are normalized
 - more than one positional preset is provided, such as `passgen strong ultra`
 - a positional preset is mixed with `--mode`, such as `passgen --mode strong ultra`
 - all character sets are disabled at the same time
@@ -154,6 +160,7 @@ When validation fails, passgen prints a short hint after the error so the next a
 | Missing option value | `passgen --length` | Provide a value, for example `passgen --length 20`, or run `passgen --help`. |
 | Length too short for enabled sets | `passgen --length 3` | Increase length or disable a character set, such as `passgen --length 3 --symbols false`. |
 | Unknown preset | `passgen maximum` | Use `weak`, `medium`, `strong`, or `ultra`, or run `passgen --help`. |
+| Typoed preset | `passgen --mode streng` | Use the suggested preset when shown, such as `strong`. |
 | Extra positional argument | `passgen strong extra` | Use one positional preset only, such as `passgen strong`. |
 | Mixed preset styles | `passgen --mode strong ultra` | Use `passgen strong` or `passgen --mode strong`, not both forms. |
 | Empty character set | `passgen --upper false --lower false --numbers false --symbols false` | Enable at least one character set. |
@@ -169,7 +176,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, required enabled-set coverage, invalid lengths, missing option values, too-short character-set coverage failures, unknown modes, extra positional arguments, mixed preset styles, unknown options, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, enabled-set diagnostics, and coverage diagnostics.
+The tests cover default output length, custom lengths, disabled character sets, required enabled-set coverage, invalid lengths, missing option values, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, and coverage diagnostics.
 
 ## Security notes
 
