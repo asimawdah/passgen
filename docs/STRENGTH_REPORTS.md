@@ -54,10 +54,19 @@ passgen ultra --format json --output ./generated-report.json
 passgen ultra --format json --redact --output ./redacted-report.json
 ```
 
-passgen refuses to overwrite an existing output file by default. Add `--force` only when replacing the target file is intentional.
+passgen validates export targets before generating a password:
+
+- text exports must use `.txt`
+- JSON exports must use `.json`
+- directory targets are rejected
+- parent paths that already exist as files are rejected
+- missing parent directories are created recursively
+- existing files are refused unless `--force` is used
+
+This keeps failed export commands from producing a secret that is only visible in logs or terminal scrollback.
 
 ```bash
-passgen ultra --format json --output ./generated-report.json --force
+passgen ultra --format json --output ./reports/generated-report.json --force
 ```
 
 Where supported by the operating system, files are created with owner-only permissions.
@@ -82,3 +91,4 @@ passgen ultra --format json --output ./generated-report.json --quiet
 - Avoid public logs, screenshots, chat, issue comments, and unencrypted long-term storage.
 - Use `--quiet` with `--output` when saved secrets should not also appear in terminal output.
 - Prefer importing directly into a password manager when possible.
+- Delete local exported secrets after importing them into secure storage.
