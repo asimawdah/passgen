@@ -8,7 +8,8 @@ import chalk from "chalk";
 const rawArgs = hideBin(process.argv);
 const MIN_LENGTH = 1;
 const MAX_LENGTH = 4096;
-const SUPPORTED_OPTIONS = ["length", "upper", "lower", "numbers", "symbols", "mode", "info", "help"];
+const BOOLEAN_OPTIONS = ["upper", "lower", "numbers", "symbols"];
+const SUPPORTED_OPTIONS = ["length", ...BOOLEAN_OPTIONS, ...BOOLEAN_OPTIONS.map((option) => `no-${option}`), "mode", "info", "help"];
 const SUPPORTED_MODES = ["weak", "medium", "strong", "ultra"];
 
 function editDistance(a, b) {
@@ -50,7 +51,12 @@ function suggestChoice(value, supportedValues, maxDistance = 2) {
 function suggestOption(option) {
     if (!option) return null;
 
-    const normalized = option.replace(/^-+/, "");
+    const normalized = option.replace(/^-+/, "").trim().toLowerCase();
+    if (normalized.startsWith("no-")) {
+        const suggestion = suggestChoice(normalized.slice(3), BOOLEAN_OPTIONS);
+        return suggestion ? `no-${suggestion}` : null;
+    }
+
     return suggestChoice(normalized, SUPPORTED_OPTIONS);
 }
 
