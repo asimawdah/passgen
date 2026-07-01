@@ -22,6 +22,11 @@ assert.equal(customLengthRun.status, 0, customLengthRun.stderr);
 assert.equal(customLengthRun.stdout.trim().length, 20, "custom length should be respected");
 assert.doesNotMatch(customLengthRun.stdout.trim(), /[!@#$%^&*()\-_=+\[\]{}<>?/|]/, "symbols should be excluded when disabled");
 
+const noSymbolsRun = runPassgen(["--length", "20", "--no-symbols"]);
+assert.equal(noSymbolsRun.status, 0, noSymbolsRun.stderr);
+assert.equal(noSymbolsRun.stdout.trim().length, 20, "negated boolean flags should be supported");
+assert.doesNotMatch(noSymbolsRun.stdout.trim(), /[!@#$%^&*()\-_=+\[\]{}<>?/|]/, "--no-symbols should exclude symbols");
+
 const ultraRun = runPassgen(["ultra"]);
 assert.equal(ultraRun.status, 0, ultraRun.stderr);
 assert.equal(ultraRun.stdout.trim().length, 32, "ultra positional preset should generate 32 characters");
@@ -105,6 +110,12 @@ assert.notEqual(unknownShortOptionRun.status, 0, "normalized typoed short option
 assert.match(unknownShortOptionRun.stderr, /Unknown argument: lenght|Unknown arguments: lenght/);
 assert.match(unknownShortOptionRun.stderr, /Hint: Did you mean --length\?/);
 assert.equal(unknownShortOptionRun.stdout, "", "normalized option validation errors should not print a password");
+
+const unknownNegatedOptionRun = runPassgen(["--no-symbl", "20"]);
+assert.notEqual(unknownNegatedOptionRun.status, 0, "typoed negated boolean options should fail safely");
+assert.match(unknownNegatedOptionRun.stderr, /Unknown argument: no-symbl|Unknown arguments: no-symbl/);
+assert.match(unknownNegatedOptionRun.stderr, /Hint: Did you mean --no-symbols\?/);
+assert.equal(unknownNegatedOptionRun.stdout, "", "negated option validation errors should not print a password");
 
 const unknownFarOptionRun = runPassgen(["--password-size", "20"]);
 assert.notEqual(unknownFarOptionRun.status, 0, "unsupported unrelated options should fail");
