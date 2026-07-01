@@ -13,6 +13,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
 - Validates preset names, password length, missing option values, empty character sets, unknown options, extra positional arguments, mixed preset styles, and impossible character-set coverage before generating output
 - Ensures every enabled character set appears at least once when the requested length allows it
+- `--info` reports the active character sets and whether coverage is guaranteed while keeping the generated password on stdout
 - Small single-file implementation for easy auditing and embedding
 
 ## Installation
@@ -60,7 +61,7 @@ passgen -l 20 -u true -lc true -n true -s false
 - `-n`, `--numbers` (boolean): Include digits
 - `-s`, `--symbols` (boolean): Include symbols
 - `--mode` (string): Preset mode — `weak | medium | strong | ultra`
-- `-i`, `--info` (boolean): Show password strength and entropy info
+- `-i`, `--info` (boolean): Show password strength, entropy, enabled-set, and coverage info
 
 ## Examples
 
@@ -76,6 +77,9 @@ passgen -l 16 -s false
 
 # Generate digits only
 passgen -l 24 -u false -lc false -n true -s false
+
+# Print the password on stdout and diagnostics on stderr
+passgen --length 20 --info
 ```
 
 ## Character-set coverage
@@ -94,6 +98,19 @@ Suggested fixes:
 - Disable character sets that are not needed, for example `passgen --length 3 --symbols false`.
 
 This prevents a short password from silently missing a selected character category while still being reported as generated from that category pool.
+
+### Info output
+
+`--info` prints diagnostics to stderr and keeps the password itself on stdout. This lets scripts safely capture only the generated password while humans can still review the generation settings.
+
+The diagnostics include:
+
+- `Length`: requested output length
+- `Charset`: size of the active character pool
+- `Sets`: enabled sets, such as `lowercase, uppercase, numbers, symbols`
+- `Coverage`: `guaranteed` when every enabled set is represented at least once
+- `Entropy`: estimated entropy in bits
+- `Strength`: readable strength bucket
 
 ## Shell-safe usage
 
@@ -152,7 +169,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, required enabled-set coverage, invalid lengths, missing option values, too-short character-set coverage failures, unknown modes, extra positional arguments, mixed preset styles, unknown options, empty charset failures, validation recovery hints, and `--info` output separation between stdout and stderr.
+The tests cover default output length, custom lengths, disabled character sets, required enabled-set coverage, invalid lengths, missing option values, too-short character-set coverage failures, unknown modes, extra positional arguments, mixed preset styles, unknown options, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, enabled-set diagnostics, and coverage diagnostics.
 
 ## Security notes
 
