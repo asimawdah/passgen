@@ -30,9 +30,9 @@ Use JSON when another local tool needs both the generated value and the metadata
 passgen ultra --format json
 ```
 
-Fields include `schema_version`, `generated_at`, `password`, `preset`, `length`, `charset_size`, `enabled_sets`, `entropy_bits`, `strength`, `warnings`, and `redacted`.
+Fields include `schema_version`, `generated_at`, `password`, `password_present`, `preset`, `length`, `charset_size`, `enabled_sets`, `entropy_bits`, `strength`, `warnings`, and `redacted`.
 
-`schema_version` starts at `1` and gives scripts a stable contract to check before parsing report fields. `generated_at` is an ISO-8601 UTC timestamp that can be used in local audit trails. `redacted` is always present so automation can safely distinguish full reports from redacted reports.
+`schema_version` is currently `2` and gives scripts a stable contract to check before parsing report fields. `generated_at` is an ISO-8601 UTC timestamp that can be used in local audit trails. `redacted` is always present so automation can safely distinguish full reports from redacted reports. `password_present` is also always present so automation can tell whether the `password` field contains a generated secret or only a placeholder.
 
 ## Redacted JSON output
 
@@ -42,7 +42,7 @@ Use `--redact` when the JSON metadata needs to be reviewed, attached to a bug re
 passgen ultra --format json --redact
 ```
 
-The redacted report keeps the strength metadata, replaces `password` with `[redacted]`, and sets `redacted: true` so downstream tooling can tell that the generated value was intentionally removed.
+The redacted report keeps the strength metadata, replaces `password` with `[redacted]`, sets `redacted: true`, and sets `password_present: false` so downstream tooling can tell that the generated value is not included.
 
 `--redact` requires `--format json`. Plain text output always contains the generated password, so passgen rejects `--redact` in text mode instead of silently printing an unredacted secret.
 
@@ -89,7 +89,7 @@ passgen ultra --format json --output ./generated-report.json --quiet
 ## Practical safety notes
 
 - Prefer `strong` or `ultra` for important accounts.
-- Treat JSON exports as sensitive because they include the generated value unless `--redact` is used.
+- Treat JSON exports as sensitive because they include the generated value unless `redacted` is `true` and `password_present` is `false`.
 - Avoid public logs, screenshots, chat, issue comments, and unencrypted long-term storage.
 - Use `--quiet` with `--output` when saved secrets should not also appear in terminal output.
 - Prefer importing directly into a password manager when possible.
