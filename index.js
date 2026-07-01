@@ -10,6 +10,7 @@ import chalk from "chalk";
 const rawArgs = hideBin(process.argv);
 const MIN_LENGTH = 1;
 const MAX_LENGTH = 4096;
+const REPORT_SCHEMA_VERSION = 1;
 const FORMAT_VALUES = ["text", "json"];
 const OUTPUT_EXTENSIONS = {
     text: [".txt"],
@@ -157,6 +158,11 @@ if (argv.quiet && !argv.output) {
     process.exit(1);
 }
 
+if (argv.redact && argv.format !== "json") {
+    console.error(chalk.red("❌ --redact requires --format json because text output is always the generated password."));
+    process.exit(1);
+}
+
 function validateOutputTarget(path) {
     if (!path) return;
 
@@ -259,6 +265,8 @@ function buildWarnings(report) {
 function buildReport(password) {
     const entropyBits = Number((config.length * Math.log2(charset.length)).toFixed(1));
     const report = {
+        schema_version: REPORT_SCHEMA_VERSION,
+        generated_at: new Date().toISOString(),
         password,
         preset: argv.mode || "custom",
         length: config.length,
@@ -275,10 +283,15 @@ function buildReport(password) {
 }
 
 function buildSerializableReport(report) {
-    if (!argv.redact) return report;
+    const baseReport = {
+        ...report,
+        redacted: false,
+    };
+
+    if (!argv.redact) return baseReport;
 
     return {
-        ...report,
+        ...baseReport,
         password: "[redacted]",
         redacted: true,
     };
