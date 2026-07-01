@@ -16,7 +16,7 @@ function runPassgen(args = []) {
 }
 
 function assertReportSchema(report, expectedLength) {
-  assert.equal(report.schema_version, 1, "JSON reports should expose a stable schema version");
+  assert.equal(report.schema_version, 2, "JSON reports should expose a stable schema version");
   assert.equal(typeof report.generated_at, "string", "JSON reports should include generation timestamp metadata");
   assert.match(report.generated_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/, "generated_at should be an ISO-8601 UTC timestamp");
   assert.equal(report.length, expectedLength);
@@ -25,6 +25,7 @@ function assertReportSchema(report, expectedLength) {
   assert.ok(Array.isArray(report.enabled_sets));
   assert.ok(Array.isArray(report.warnings));
   assert.equal(typeof report.redacted, "boolean", "JSON reports should make redaction state explicit");
+  assert.equal(typeof report.password_present, "boolean", "JSON reports should say whether password contains a generated secret");
 }
 
 const defaultRun = runPassgen();
@@ -85,6 +86,7 @@ const jsonReport = JSON.parse(jsonRun.stdout);
 assert.equal(jsonReport.password.length, 16, "JSON output should include the generated value");
 assertReportSchema(jsonReport, 16);
 assert.equal(jsonReport.redacted, false);
+assert.equal(jsonReport.password_present, true, "full JSON output should mark that the generated password is present");
 
 const redactedJsonRun = runPassgen(["--length", "16", "--format", "json", "--redact"]);
 assert.equal(redactedJsonRun.status, 0, redactedJsonRun.stderr);
@@ -92,6 +94,7 @@ const redactedJsonReport = JSON.parse(redactedJsonRun.stdout);
 assert.equal(redactedJsonReport.password, "[redacted]", "--redact should remove the generated value from JSON output");
 assertReportSchema(redactedJsonReport, 16);
 assert.equal(redactedJsonReport.redacted, true);
+assert.equal(redactedJsonReport.password_present, false, "redacted JSON output should mark that no generated password is present");
 
 const tempDir = mkdtempSync(join(tmpdir(), "passgen-test-"));
 try {
@@ -118,6 +121,7 @@ try {
   assert.equal(exportedReport.preset, "ultra");
   assertReportSchema(exportedReport, 32);
   assert.equal(exportedReport.redacted, false);
+  assert.equal(exportedReport.password_present, true);
 
   const quietJsonPath = join(tempDir, "quiet-report.json");
   const quietJsonExportRun = runPassgen(["ultra", "--format", "json", "--output", quietJsonPath, "--quiet"]);
@@ -127,6 +131,7 @@ try {
   assert.equal(quietJsonReport.preset, "ultra");
   assertReportSchema(quietJsonReport, 32);
   assert.equal(quietJsonReport.redacted, false);
+  assert.equal(quietJsonReport.password_present, true);
 
   const redactedJsonPath = join(tempDir, "redacted-report.json");
   const redactedJsonExportRun = runPassgen(["ultra", "--format", "json", "--redact", "--output", redactedJsonPath]);
@@ -135,6 +140,7 @@ try {
   assert.equal(exportedRedactedReport.password, "[redacted]");
   assertReportSchema(exportedRedactedReport, 32);
   assert.equal(exportedRedactedReport.redacted, true);
+  assert.equal(exportedRedactedReport.password_present, false);
 
   const nestedPath = join(tempDir, "nested", "exports", "value.txt");
   const nestedExportRun = runPassgen(["--length", "15", "--output", nestedPath, "--quiet"]);
