@@ -55,6 +55,7 @@ assert.equal(missingLengthValueRun.stdout, "", "missing option values should not
 const tooShortForSetsRun = runPassgen(["--length", "3"]);
 assert.notEqual(tooShortForSetsRun.status, 0, "length shorter than enabled character sets should fail");
 assert.match(tooShortForSetsRun.stderr, /too short for 4 enabled character sets/);
+assert.match(tooShortForSetsRun.stderr, /lowercase, uppercase, numbers, symbols/);
 assert.match(tooShortForSetsRun.stderr, /Hint: Use --length 4/);
 assert.equal(tooShortForSetsRun.stdout, "", "class coverage validation errors should not print a password");
 
@@ -106,7 +107,14 @@ const infoRun = runPassgen(["--length", "16", "--info"]);
 assert.equal(infoRun.status, 0, infoRun.stderr);
 assert.equal(infoRun.stdout.trim().length, 16, "--info should still print only the generated password to stdout");
 assert.match(infoRun.stderr, /Password Info/);
+assert.match(infoRun.stderr, /Sets:\s+lowercase, uppercase, numbers, symbols/);
+assert.match(infoRun.stderr, /Coverage:\s+guaranteed/);
 assert.match(infoRun.stderr, /Entropy:/);
 assert.match(infoRun.stderr, /Strength:/);
+
+const lowerOnlyInfoRun = runPassgen(["--upper", "false", "--numbers", "false", "--symbols", "false", "--info"]);
+assert.equal(lowerOnlyInfoRun.status, 0, lowerOnlyInfoRun.stderr);
+assert.match(lowerOnlyInfoRun.stderr, /Sets:\s+lowercase/);
+assert.doesNotMatch(lowerOnlyInfoRun.stderr, /uppercase, numbers, symbols/);
 
 console.log("passgen CLI smoke tests passed");
