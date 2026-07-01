@@ -30,7 +30,9 @@ Use JSON when another local tool needs both the generated value and the metadata
 passgen ultra --format json
 ```
 
-Fields include `password`, `preset`, `length`, `charset_size`, `enabled_sets`, `entropy_bits`, `strength`, and `warnings`.
+Fields include `schema_version`, `generated_at`, `password`, `preset`, `length`, `charset_size`, `enabled_sets`, `entropy_bits`, `strength`, `warnings`, and `redacted`.
+
+`schema_version` starts at `1` and gives scripts a stable contract to check before parsing report fields. `generated_at` is an ISO-8601 UTC timestamp that can be used in local audit trails. `redacted` is always present so automation can safely distinguish full reports from redacted reports.
 
 ## Redacted JSON output
 
@@ -40,9 +42,9 @@ Use `--redact` when the JSON metadata needs to be reviewed, attached to a bug re
 passgen ultra --format json --redact
 ```
 
-The redacted report keeps the strength metadata, replaces `password` with `[redacted]`, and adds `redacted: true` so downstream tooling can tell that the generated value was intentionally removed.
+The redacted report keeps the strength metadata, replaces `password` with `[redacted]`, and sets `redacted: true` so downstream tooling can tell that the generated value was intentionally removed.
 
-`--redact` only affects JSON output and JSON exports. Plain text output remains the generated password so existing shell scripts do not silently receive a placeholder.
+`--redact` requires `--format json`. Plain text output always contains the generated password, so passgen rejects `--redact` in text mode instead of silently printing an unredacted secret.
 
 ## File export
 
