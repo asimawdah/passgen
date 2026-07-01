@@ -13,7 +13,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
 - Optional readable and JSON strength reports with entropy, enabled sets, warnings, schema version, and generation timestamp
 - Redacted JSON reports for sharing strength metadata without exposing the generated password
-- Explicit redaction-state metadata so automation can tell whether a JSON report contains the generated value
+- Explicit redaction-state and password-presence metadata so automation can tell whether a JSON report contains the generated value
 - Local file export with overwrite protection, extension checks, parent-directory creation, and optional quiet mode
 - Validates preset names, password length, empty character sets, and unsafe output targets before generating output
 - Small single-file implementation for easy auditing and embedding
@@ -113,6 +113,7 @@ passgen ultra --output ./generated.txt --quiet
 - `schema_version`
 - `generated_at`
 - `password`
+- `password_present`
 - `preset`
 - `length`
 - `charset_size`
@@ -122,9 +123,9 @@ passgen ultra --output ./generated.txt --quiet
 - `warnings`
 - `redacted`
 
-`schema_version` lets scripts detect future report-format changes. `generated_at` is an ISO-8601 UTC timestamp for local audit trails. `redacted` is always present in JSON output so downstream tooling can distinguish full reports from reports where the generated value was intentionally removed.
+`schema_version` lets scripts detect future report-format changes. The current JSON contract is schema version `2`. `generated_at` is an ISO-8601 UTC timestamp for local audit trails. `redacted` is always present in JSON output so downstream tooling can distinguish full reports from reports where the generated value was intentionally removed. `password_present` is also always present: it is `true` when `password` contains a generated secret and `false` when the password field is only the `[redacted]` placeholder.
 
-Use `--redact` with `--format json` when the metadata is meant for review, logs, bug reports, or screenshots. The JSON keeps the same metadata fields, replaces `password` with `[redacted]`, and sets `redacted: true`.
+Use `--redact` with `--format json` when the metadata is meant for review, logs, bug reports, or screenshots. The JSON keeps the same metadata fields, replaces `password` with `[redacted]`, sets `redacted: true`, and sets `password_present: false`.
 
 `--redact` is rejected unless `--format json` is also used. Plain text output is always the generated password, so this prevents a dangerous false sense that a text password was redacted.
 
@@ -171,14 +172,14 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON report schema metadata, redacted JSON reports, invalid text redaction, quiet exports, nested output directories, extension validation, directory target failures, invalid parent-path failures, and output-file overwrite protection.
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON report schema metadata, password presence metadata, redacted JSON reports, invalid text redaction, quiet exports, nested output directories, extension validation, directory target failures, invalid parent-path failures, and output-file overwrite protection.
 
 ## Security notes
 
 - passgen relies on Node's `crypto` for random number generation; do not use non-cryptographic RNGs for password generation.
 - Avoid piping passwords through logs or unencrypted channels.
 - Prefer long passwords generated with the `strong` or `ultra` preset for important accounts.
-- Treat JSON reports and exported files as sensitive unless `--redact` is used and the original generated password is handled separately.
+- Treat JSON reports and exported files as sensitive unless `--redact` is used and `password_present` is `false`.
 - Use `--quiet` with `--output` when saving sensitive output should not also print it to terminal logs.
 - Keep exported files in secure local storage and delete them after importing into a password manager.
 
