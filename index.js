@@ -9,6 +9,7 @@ const rawArgs = hideBin(process.argv);
 const MIN_LENGTH = 1;
 const MAX_LENGTH = 4096;
 const SUPPORTED_OPTIONS = ["length", "upper", "lower", "numbers", "symbols", "mode", "info", "help"];
+const SUPPORTED_MODES = ["weak", "medium", "strong", "ultra"];
 
 function editDistance(a, b) {
     const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
@@ -30,20 +31,35 @@ function editDistance(a, b) {
     return dp[a.length][b.length];
 }
 
+function suggestChoice(value, supportedValues, maxDistance = 2) {
+    if (!value) return null;
+
+    const normalized = value.trim().toLowerCase();
+    let best = null;
+
+    for (const supportedValue of supportedValues) {
+        const distance = editDistance(normalized, supportedValue);
+        if (!best || distance < best.distance) {
+            best = { value: supportedValue, distance };
+        }
+    }
+
+    return best && best.distance <= maxDistance ? best.value : null;
+}
+
 function suggestOption(option) {
     if (!option) return null;
 
     const normalized = option.replace(/^-+/, "");
-    let best = null;
+    return suggestChoice(normalized, SUPPORTED_OPTIONS);
+}
 
-    for (const supportedOption of SUPPORTED_OPTIONS) {
-        const distance = editDistance(normalized, supportedOption);
-        if (!best || distance < best.distance) {
-            best = { option: supportedOption, distance };
-        }
-    }
+function buildModeHint(mode) {
+    const suggestion = suggestChoice(mode, SUPPORTED_MODES);
 
-    return best && best.distance <= 2 ? best.option : null;
+    return suggestion
+        ? `Did you mean "${suggestion}"? Use one of: ${SUPPORTED_MODES.join(", ")}.`
+        : `Use one of: ${SUPPORTED_MODES.join(", ")}, or run \`passgen --help\`.`;
 }
 
 function extractUnknownOption(message) {
@@ -152,8 +168,13 @@ if (positionalPresets.length === 1 && argv.mode) {
 
 // support positional preset (e.g., `node index.js ultra`)
 const firstPositional = positionalPresets[0];
+let selectedMode = null;
 if (firstPositional && !argv.mode) {
-    argv.mode = firstPositional;
+    selectedMode = firstPositional.trim().toLowerCase();
+    argv.mode = selectedMode;
+} else if (argv.mode) {
+    selectedMode = argv.mode.trim().toLowerCase();
+    argv.mode = selectedMode;
 }
 
 // ---------------- presets ----------------
@@ -192,8 +213,8 @@ let config = {
 if (argv.mode) {
     if (!Object.hasOwn(presets, argv.mode)) {
         fail(
-            `Unknown mode "${argv.mode}". Use one of: ${Object.keys(presets).join(", ")}`,
-            "Run `passgen --help` to see presets and flags.",
+            `Unknown mode "${argv.mode}". Use one of: ${SUPPORTED_MODES.join(", ")}`,
+            buildModeHint(argv.mode),
         );
     }
 
@@ -291,6 +312,7 @@ if (argv.info) {
     else if (passStrength === "Ultra") strengthColor = chalk.cyan;
 
     console.error(chalk.gray(`\n=== Password Info ===`));
+    console.error(chalk.gray(`Mode:      `) + chalk.white(selectedMode ?? "custom"));
     console.error(chalk.gray(`Length:    `) + chalk.white(config.length));
     console.error(chalk.gray(`Charset:   `) + chalk.white(charset.length) + chalk.gray(` chars`));
     console.error(chalk.gray(`Sets:      `) + chalk.white(enabledSetLabels));
