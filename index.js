@@ -172,6 +172,13 @@ const sets = {
     symbols: "!@#$%^&*()-_=+[]{}<>?/|",
 };
 
+const setLabels = {
+    lower: "lowercase",
+    upper: "uppercase",
+    numbers: "numbers",
+    symbols: "symbols",
+};
+
 // ---------------- merge config ----------------
 let config = {
     length: 12,
@@ -214,7 +221,7 @@ let charset = "";
 
 for (const [name, chars] of Object.entries(sets)) {
     if (config[name]) {
-        enabledSets.push({ name, chars });
+        enabledSets.push({ name, label: setLabels[name], chars });
         charset += chars;
     }
 }
@@ -227,7 +234,7 @@ if (!charset) {
 }
 
 if (config.length < enabledSets.length) {
-    const enabledNames = enabledSets.map((set) => set.name).join(", ");
+    const enabledNames = enabledSets.map((set) => set.label).join(", ");
     fail(
         `Password length ${config.length} is too short for ${enabledSets.length} enabled character sets (${enabledNames})`,
         `Use --length ${enabledSets.length} or disable character sets you do not need.`,
@@ -276,6 +283,7 @@ const result = generate(config.length);
 if (argv.info) {
     const entropy = (config.length * Math.log2(charset.length)).toFixed(1);
     const passStrength = strength(config.length, charset.length);
+    const enabledSetLabels = enabledSets.map((set) => set.label).join(", ");
 
     let strengthColor = chalk.green;
     if (passStrength === "Weak") strengthColor = chalk.red;
@@ -285,6 +293,8 @@ if (argv.info) {
     console.error(chalk.gray(`\n=== Password Info ===`));
     console.error(chalk.gray(`Length:    `) + chalk.white(config.length));
     console.error(chalk.gray(`Charset:   `) + chalk.white(charset.length) + chalk.gray(` chars`));
+    console.error(chalk.gray(`Sets:      `) + chalk.white(enabledSetLabels));
+    console.error(chalk.gray(`Coverage:  `) + chalk.white("guaranteed"));
     console.error(chalk.gray(`Entropy:   `) + chalk.white(entropy) + chalk.gray(` bits`));
     console.error(chalk.gray(`Strength:  `) + strengthColor(passStrength));
     console.error(chalk.gray(`=====================\n`));
