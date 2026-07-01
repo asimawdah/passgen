@@ -11,8 +11,9 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Uses Node's built-in `crypto.randomInt` for secure randomness
 - Preset strength modes (weak, medium, strong, ultra)
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
-- Optional readable and JSON strength reports with entropy, enabled sets, and warnings
+- Optional readable and JSON strength reports with entropy, enabled sets, warnings, schema version, and generation timestamp
 - Redacted JSON reports for sharing strength metadata without exposing the generated password
+- Explicit redaction-state metadata so automation can tell whether a JSON report contains the generated value
 - Local file export with overwrite protection, extension checks, parent-directory creation, and optional quiet mode
 - Validates preset names, password length, empty character sets, and unsafe output targets before generating output
 - Small single-file implementation for easy auditing and embedding
@@ -65,7 +66,7 @@ passgen -l 20 -u true -lc true -n true -s false
 - `-i`, `--info` (boolean): Show password strength and entropy info
 - `-r`, `--report` (boolean): Show a readable strength report on stderr
 - `--format` (string): Output format — `text | json` (default: `text`)
-- `--redact` (boolean): Redact the generated password from JSON output and JSON exports
+- `--redact` (boolean): Redact the generated password from JSON output and JSON exports; requires `--format json`
 - `-o`, `--output` (string): Save the current output format to a local file
 - `-q`, `--quiet` (boolean): Suppress stdout when `--output` is used
 - `--force` (boolean): Allow `--output` to overwrite an existing file
@@ -109,6 +110,8 @@ passgen ultra --output ./generated.txt --quiet
 
 `--format json` emits a JSON object containing:
 
+- `schema_version`
+- `generated_at`
 - `password`
 - `preset`
 - `length`
@@ -117,8 +120,13 @@ passgen ultra --output ./generated.txt --quiet
 - `entropy_bits`
 - `strength`
 - `warnings`
+- `redacted`
 
-Use `--redact` with `--format json` when the metadata is meant for review, logs, bug reports, or screenshots. The JSON keeps the same metadata fields, replaces `password` with `[redacted]`, and adds `redacted: true`.
+`schema_version` lets scripts detect future report-format changes. `generated_at` is an ISO-8601 UTC timestamp for local audit trails. `redacted` is always present in JSON output so downstream tooling can distinguish full reports from reports where the generated value was intentionally removed.
+
+Use `--redact` with `--format json` when the metadata is meant for review, logs, bug reports, or screenshots. The JSON keeps the same metadata fields, replaces `password` with `[redacted]`, and sets `redacted: true`.
+
+`--redact` is rejected unless `--format json` is also used. Plain text output is always the generated password, so this prevents a dangerous false sense that a text password was redacted.
 
 `--output` saves the selected output format to a local file. Text exports must use `.txt`; JSON exports must use `.json`. Existing files are protected by default; use `--force` only when replacement is intentional. Missing parent directories are created automatically, but directory targets and file paths with a non-directory parent are rejected before a password is generated. Add `--quiet` when exporting should not also print the generated value or JSON report to stdout. See [`docs/STRENGTH_REPORTS.md`](docs/STRENGTH_REPORTS.md) for details.
 
@@ -151,6 +159,7 @@ passgen exits with a non-zero status and writes the error to stderr when:
 - `--output` has a parent path that exists as a file instead of a directory
 - `--output` uses an extension that does not match the selected format (`.txt` for text, `.json` for JSON)
 - `--quiet` is used without `--output`
+- `--redact` is used without `--format json`
 
 This keeps automation and scripts safer because invalid input fails loudly before writing files or producing surprising output.
 
@@ -162,7 +171,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON reports, redacted JSON reports, quiet exports, nested output directories, extension validation, directory target failures, invalid parent-path failures, and output-file overwrite protection.
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON report schema metadata, redacted JSON reports, invalid text redaction, quiet exports, nested output directories, extension validation, directory target failures, invalid parent-path failures, and output-file overwrite protection.
 
 ## Security notes
 
