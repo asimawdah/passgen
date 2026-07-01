@@ -26,6 +26,14 @@ const ultraRun = runPassgen(["ultra"]);
 assert.equal(ultraRun.status, 0, ultraRun.stderr);
 assert.equal(ultraRun.stdout.trim().length, 32, "ultra positional preset should generate 32 characters");
 
+const uppercasePresetRun = runPassgen(["ULTRA"]);
+assert.equal(uppercasePresetRun.status, 0, uppercasePresetRun.stderr);
+assert.equal(uppercasePresetRun.stdout.trim().length, 32, "uppercase positional presets should normalize to the supported preset");
+
+const paddedFlagPresetRun = runPassgen(["--mode", " strong "]);
+assert.equal(paddedFlagPresetRun.status, 0, paddedFlagPresetRun.stderr);
+assert.equal(paddedFlagPresetRun.stdout.trim().length, 18, "--mode values with surrounding spaces should normalize safely");
+
 const lowerOnlyRun = runPassgen(["--upper", "false", "--numbers", "false", "--symbols", "false"]);
 assert.equal(lowerOnlyRun.status, 0, lowerOnlyRun.stderr);
 assert.match(lowerOnlyRun.stdout.trim(), /^[a-z]+$/, "lower-only options should restrict the character set");
@@ -62,7 +70,13 @@ assert.equal(tooShortForSetsRun.stdout, "", "class coverage validation errors sh
 const unknownFlagModeRun = runPassgen(["--mode", "maximum"]);
 assert.notEqual(unknownFlagModeRun.status, 0, "unknown --mode value should fail");
 assert.match(unknownFlagModeRun.stderr, /Unknown mode/);
-assert.match(unknownFlagModeRun.stderr, /Hint: Run `passgen --help`/);
+assert.match(unknownFlagModeRun.stderr, /Use one of: weak, medium, strong, ultra/);
+
+const typoedModeRun = runPassgen(["--mode", "streng"]);
+assert.notEqual(typoedModeRun.status, 0, "typoed --mode value should fail");
+assert.match(typoedModeRun.stderr, /Unknown mode/);
+assert.match(typoedModeRun.stderr, /Hint: Did you mean "strong"\?/);
+assert.equal(typoedModeRun.stdout, "", "typoed mode validation errors should not print a password");
 
 const unknownPositionalModeRun = runPassgen(["maximum"]);
 assert.notEqual(unknownPositionalModeRun.status, 0, "unknown positional mode should fail");
@@ -107,10 +121,16 @@ const infoRun = runPassgen(["--length", "16", "--info"]);
 assert.equal(infoRun.status, 0, infoRun.stderr);
 assert.equal(infoRun.stdout.trim().length, 16, "--info should still print only the generated password to stdout");
 assert.match(infoRun.stderr, /Password Info/);
+assert.match(infoRun.stderr, /Mode:\s+custom/);
 assert.match(infoRun.stderr, /Sets:\s+lowercase, uppercase, numbers, symbols/);
 assert.match(infoRun.stderr, /Coverage:\s+guaranteed/);
 assert.match(infoRun.stderr, /Entropy:/);
 assert.match(infoRun.stderr, /Strength:/);
+
+const presetInfoRun = runPassgen(["--mode", "strong", "--info"]);
+assert.equal(presetInfoRun.status, 0, presetInfoRun.stderr);
+assert.match(presetInfoRun.stderr, /Mode:\s+strong/);
+assert.match(presetInfoRun.stderr, /Length:\s+18/);
 
 const lowerOnlyInfoRun = runPassgen(["--upper", "false", "--numbers", "false", "--symbols", "false", "--info"]);
 assert.equal(lowerOnlyInfoRun.status, 0, lowerOnlyInfoRun.stderr);
