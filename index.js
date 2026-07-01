@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import crypto from "crypto";
-import { writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
+import { dirname, extname } from "node:path";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import chalk from "chalk";
@@ -10,6 +11,10 @@ const rawArgs = hideBin(process.argv);
 const MIN_LENGTH = 1;
 const MAX_LENGTH = 4096;
 const FORMAT_VALUES = ["text", "json"];
+const OUTPUT_EXTENSIONS = {
+    text: [".txt"],
+    json: [".json"],
+};
 
 // normalize args: convert single-dash multi-letter flags (e.g. `-lc`) to
 // double-dash form (`--lc`) so users can type `-lc false` as they did.
@@ -151,6 +156,36 @@ if (argv.quiet && !argv.output) {
     console.error(chalk.red("❌ --quiet requires --output so generated content is not discarded."));
     process.exit(1);
 }
+
+function validateOutputTarget(path) {
+    if (!path) return;
+
+    const allowedExtensions = OUTPUT_EXTENSIONS[argv.format];
+    const actualExtension = extname(path).toLowerCase();
+    if (!allowedExtensions.includes(actualExtension)) {
+        console.error(chalk.red(`❌ ${argv.format} output must use ${allowedExtensions.join(" or ")} extension: ${path}`));
+        process.exit(1);
+    }
+
+    if (existsSync(path) && statSync(path).isDirectory()) {
+        console.error(chalk.red(`❌ Output path is a directory, not a file: ${path}`));
+        process.exit(1);
+    }
+
+    const parent = dirname(path);
+    if (parent && parent !== ".") {
+        if (existsSync(parent) && !statSync(parent).isDirectory()) {
+            console.error(chalk.red(`❌ Output parent path is not a directory: ${parent}`));
+            process.exit(1);
+        }
+
+        if (!existsSync(parent)) {
+            mkdirSync(parent, { recursive: true });
+        }
+    }
+}
+
+validateOutputTarget(argv.output);
 
 if (argv.upper !== undefined) config.upper = argv.upper;
 if (argv.lower !== undefined) config.lower = argv.lower;
