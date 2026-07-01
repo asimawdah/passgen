@@ -12,7 +12,8 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Preset strength modes (weak, medium, strong, ultra)
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
 - Validates preset names, password length, missing option values, empty character sets, unknown options, extra positional arguments, mixed preset styles, and impossible character-set coverage before generating output
-- Normalizes preset casing/spacing and suggests the nearest supported preset for common typos
+- Supports explicit boolean disabling with either `--symbols false` or standard negated flags such as `--no-symbols`
+- Normalizes preset casing/spacing and suggests the nearest supported preset or option for common typos
 - Ensures every enabled character set appears at least once when the requested length allows it
 - `--info` reports the selected mode, active character sets, and whether coverage is guaranteed while keeping the generated password on stdout
 - Small single-file implementation for easy auditing and embedding
@@ -52,15 +53,16 @@ Using flags:
 ```bash
 passgen --mode strong
 passgen -l 20 -u true -lc true -n true -s false
+passgen --length 20 --no-symbols
 ```
 
 ### Flags
 
 - `-l`, `--length` (number): Password length (default: 12; valid range: 1-4096)
-- `-u`, `--upper` (boolean): Include uppercase letters
-- `-lc`, `--lower` (boolean): Include lowercase letters
-- `-n`, `--numbers` (boolean): Include digits
-- `-s`, `--symbols` (boolean): Include symbols
+- `-u`, `--upper` / `--no-upper` (boolean): Include uppercase letters
+- `-lc`, `--lower` / `--no-lower` (boolean): Include lowercase letters
+- `-n`, `--numbers` / `--no-numbers` (boolean): Include digits
+- `-s`, `--symbols` / `--no-symbols` (boolean): Include symbols
 - `--mode` (string): Preset mode — `weak | medium | strong | ultra`
 - `-i`, `--info` (boolean): Show password strength, entropy, selected mode, enabled-set, and coverage info
 
@@ -79,9 +81,11 @@ passgen --mode " strong "
 
 # Custom length without symbols
 passgen -l 16 -s false
+passgen --length 16 --no-symbols
 
 # Generate digits only
 passgen -l 24 -u false -lc false -n true -s false
+passgen --length 24 --no-upper --no-lower --no-symbols
 
 # Print the password on stdout and diagnostics on stderr
 passgen --length 20 --info
@@ -100,7 +104,7 @@ passgen --length 3
 Suggested fixes:
 
 - Increase the length, for example `passgen --length 4` when all four sets are enabled.
-- Disable character sets that are not needed, for example `passgen --length 3 --symbols false`.
+- Disable character sets that are not needed, for example `passgen --length 3 --symbols false` or `passgen --length 3 --no-symbols`.
 
 This prevents a short password from silently missing a selected character category while still being reported as generated from that category pool.
 
@@ -146,7 +150,7 @@ passgen exits with a non-zero status and writes the error to stderr when:
 - more than one positional preset is provided, such as `passgen strong ultra`
 - a positional preset is mixed with `--mode`, such as `passgen --mode strong ultra`
 - all character sets are disabled at the same time
-- an unknown option is provided, such as a typo in `--length`
+- an unknown option is provided, such as a typo in `--length` or `--no-symbols`
 
 This keeps automation and scripts safer because invalid input fails loudly instead of producing surprising output.
 
@@ -165,6 +169,7 @@ When validation fails, passgen prints a short hint after the error so the next a
 | Mixed preset styles | `passgen --mode strong ultra` | Use `passgen strong` or `passgen --mode strong`, not both forms. |
 | Empty character set | `passgen --upper false --lower false --numbers false --symbols false` | Enable at least one character set. |
 | Unknown option | `passgen --lenght 20` | Fix the option name or run `passgen --help` to review supported flags. |
+| Unknown negated option | `passgen --no-symbl` | Use the suggested negated flag when shown, such as `--no-symbols`. |
 
 These hints are written to stderr, while generated passwords remain on stdout. This makes `--info` and validation output safer for scripts that capture only the generated password.
 
@@ -176,7 +181,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, required enabled-set coverage, invalid lengths, missing option values, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, and coverage diagnostics.
+The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, missing option values, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, and coverage diagnostics.
 
 ## Security notes
 
