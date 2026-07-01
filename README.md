@@ -13,8 +13,8 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
 - Optional readable and JSON strength reports with entropy, enabled sets, and warnings
 - Redacted JSON reports for sharing strength metadata without exposing the generated password
-- Local file export with overwrite protection and optional quiet mode
-- Validates preset names, password length, and empty character sets before generating output
+- Local file export with overwrite protection, extension checks, parent-directory creation, and optional quiet mode
+- Validates preset names, password length, empty character sets, and unsafe output targets before generating output
 - Small single-file implementation for easy auditing and embedding
 
 ## Installation
@@ -120,7 +120,7 @@ passgen ultra --output ./generated.txt --quiet
 
 Use `--redact` with `--format json` when the metadata is meant for review, logs, bug reports, or screenshots. The JSON keeps the same metadata fields, replaces `password` with `[redacted]`, and adds `redacted: true`.
 
-`--output` saves the selected output format to a local file. Existing files are protected by default; use `--force` only when replacement is intentional. Add `--quiet` when exporting should not also print the generated value or JSON report to stdout. See [`docs/STRENGTH_REPORTS.md`](docs/STRENGTH_REPORTS.md) for details.
+`--output` saves the selected output format to a local file. Text exports must use `.txt`; JSON exports must use `.json`. Existing files are protected by default; use `--force` only when replacement is intentional. Missing parent directories are created automatically, but directory targets and file paths with a non-directory parent are rejected before a password is generated. Add `--quiet` when exporting should not also print the generated value or JSON report to stdout. See [`docs/STRENGTH_REPORTS.md`](docs/STRENGTH_REPORTS.md) for details.
 
 ## Shell-safe usage
 
@@ -147,9 +147,12 @@ passgen exits with a non-zero status and writes the error to stderr when:
 - `--mode` or the positional preset is not one of `weak`, `medium`, `strong`, or `ultra`
 - all character sets are disabled at the same time
 - `--output` targets an existing file without `--force`
+- `--output` points at a directory
+- `--output` has a parent path that exists as a file instead of a directory
+- `--output` uses an extension that does not match the selected format (`.txt` for text, `.json` for JSON)
 - `--quiet` is used without `--output`
 
-This keeps automation and scripts safer because invalid input fails loudly instead of producing surprising output.
+This keeps automation and scripts safer because invalid input fails loudly before writing files or producing surprising output.
 
 ## Testing
 
@@ -159,7 +162,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON reports, redacted JSON reports, quiet exports, and output-file overwrite protection.
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON reports, redacted JSON reports, quiet exports, nested output directories, extension validation, directory target failures, invalid parent-path failures, and output-file overwrite protection.
 
 ## Security notes
 
@@ -168,6 +171,7 @@ The tests cover default output length, custom lengths, disabled character sets, 
 - Prefer long passwords generated with the `strong` or `ultra` preset for important accounts.
 - Treat JSON reports and exported files as sensitive unless `--redact` is used and the original generated password is handled separately.
 - Use `--quiet` with `--output` when saving sensitive output should not also print it to terminal logs.
+- Keep exported files in secure local storage and delete them after importing into a password manager.
 
 ## Contributing
 
