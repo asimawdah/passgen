@@ -11,6 +11,14 @@ const MAX_LENGTH = 4096;
 const BOOLEAN_OPTIONS = ["upper", "lower", "numbers", "symbols"];
 const SUPPORTED_OPTIONS = ["length", ...BOOLEAN_OPTIONS, ...BOOLEAN_OPTIONS.map((option) => `no-${option}`), "mode", "info", "help"];
 const SUPPORTED_MODES = ["weak", "medium", "strong", "ultra"];
+const OPTION_ALIASES = {
+    l: "length",
+    u: "upper",
+    lc: "lower",
+    n: "numbers",
+    s: "symbols",
+    i: "info",
+};
 
 function editDistance(a, b) {
     const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
@@ -78,10 +86,33 @@ function extractMissingValueOption(message) {
     return match ? match[1].replace(/^--?/, "") : null;
 }
 
+function normalizeOptionName(option) {
+    const normalized = option.replace(/^-+/, "").trim().toLowerCase();
+    return OPTION_ALIASES[normalized] ?? normalized;
+}
+
+function buildMissingValueHint(option) {
+    const normalized = normalizeOptionName(option);
+
+    if (normalized === "length") {
+        return "Provide a numeric length, for example `passgen --length 20`, or run `passgen --help`.";
+    }
+
+    if (normalized === "mode") {
+        return `Provide a preset for --mode, for example \`passgen --mode strong\`. Supported presets: ${SUPPORTED_MODES.join(", ")}.`;
+    }
+
+    if (BOOLEAN_OPTIONS.includes(normalized)) {
+        return `Provide true or false for --${normalized}, or use --${normalized}/--no-${normalized} without a value.`;
+    }
+
+    return `Provide a value for --${normalized}, or run \`passgen --help\`.`;
+}
+
 function buildParserHint(message) {
     const missingValueOption = extractMissingValueOption(message);
     if (missingValueOption) {
-        return `Provide a value for --${missingValueOption}, for example \`passgen --${missingValueOption} 20\`, or run \`passgen --help\`.`;
+        return buildMissingValueHint(missingValueOption);
     }
 
     const unknownOption = extractUnknownOption(message);
