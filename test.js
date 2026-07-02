@@ -143,7 +143,10 @@ assert.equal(infoRun.status, 0, infoRun.stderr);
 assert.equal(infoRun.stdout.trim().length, 16, "--info should still print only the generated password to stdout");
 assert.match(infoRun.stderr, /Password Info/);
 assert.match(infoRun.stderr, /Mode:\s+custom/);
+assert.match(infoRun.stderr, /Length:\s+16/);
+assert.match(infoRun.stderr, /Minimum:\s+4 chars for enabled-set coverage/);
 assert.match(infoRun.stderr, /Sets:\s+lowercase, uppercase, numbers, symbols/);
+assert.match(infoRun.stderr, /Required:\s+4 of 4 sets represented/);
 assert.match(infoRun.stderr, /Coverage:\s+guaranteed/);
 assert.match(infoRun.stderr, /Entropy:/);
 assert.match(infoRun.stderr, /Strength:/);
@@ -152,10 +155,14 @@ const presetInfoRun = runPassgen(["--mode", "strong", "--info"]);
 assert.equal(presetInfoRun.status, 0, presetInfoRun.stderr);
 assert.match(presetInfoRun.stderr, /Mode:\s+strong/);
 assert.match(presetInfoRun.stderr, /Length:\s+18/);
+assert.match(presetInfoRun.stderr, /Minimum:\s+4 chars for enabled-set coverage/);
+assert.match(presetInfoRun.stderr, /Required:\s+4 of 4 sets represented/);
 
 const lowerOnlyInfoRun = runPassgen(["--upper", "false", "--numbers", "false", "--symbols", "false", "--info"]);
 assert.equal(lowerOnlyInfoRun.status, 0, lowerOnlyInfoRun.stderr);
+assert.match(lowerOnlyInfoRun.stderr, /Minimum:\s+1 chars for enabled-set coverage/);
 assert.match(lowerOnlyInfoRun.stderr, /Sets:\s+lowercase/);
+assert.match(lowerOnlyInfoRun.stderr, /Required:\s+1 of 1 sets represented/);
 assert.doesNotMatch(lowerOnlyInfoRun.stderr, /uppercase, numbers, symbols/);
 
 console.log("passgen CLI smoke tests passed");
