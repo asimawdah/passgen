@@ -11,7 +11,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Uses Node's built-in `crypto.randomInt` for secure randomness
 - Preset strength modes (weak, medium, strong, ultra)
 - CLI-friendly flags and positional preset (e.g. `passgen ultra`)
-- Optional readable and JSON strength reports with entropy, enabled sets, warnings, schema version, and generation timestamp
+- Optional readable and JSON strength reports with entropy, enabled sets, warnings, actionable recommendations, schema version, and generation timestamp
 - Redacted JSON reports for sharing strength metadata without exposing the generated password
 - Explicit redaction-state and password-presence metadata so automation can tell whether a JSON report contains the generated value
 - Local file export with overwrite protection, extension checks, parent-directory creation, and optional quiet mode
@@ -121,11 +121,12 @@ passgen ultra --output ./generated.txt --quiet
 - `entropy_bits`
 - `strength`
 - `warnings`
+- `recommendations`
 - `redacted`
 
-`schema_version` lets scripts detect future report-format changes. The current JSON contract is schema version `2`. `generated_at` is an ISO-8601 UTC timestamp for local audit trails. `redacted` is always present in JSON output so downstream tooling can distinguish full reports from reports where the generated value was intentionally removed. `password_present` is also always present: it is `true` when `password` contains a generated secret and `false` when the password field is only the `[redacted]` placeholder.
+`schema_version` lets scripts detect future report-format changes. The current JSON contract is schema version `2`. `generated_at` is an ISO-8601 UTC timestamp for local audit trails. `warnings` explain detected risks, while `recommendations` provide concrete next steps such as using a stronger preset, enabling symbols, choosing a longer password, or storing the value safely. `redacted` is always present in JSON output so downstream tooling can distinguish full reports from reports where the generated value was intentionally removed. `password_present` is also always present: it is `true` when `password` contains a generated secret and `false` when the password field is only the `[redacted]` placeholder.
 
-Use `--redact` with `--format json` when the metadata is meant for review, logs, bug reports, or screenshots. The JSON keeps the same metadata fields, replaces `password` with `[redacted]`, sets `redacted: true`, and sets `password_present: false`.
+Use `--redact` with `--format json` when the metadata is meant for review, logs, bug reports, or screenshots. The JSON keeps the same metadata fields, replaces `password` with `[redacted]`, sets `redacted: true`, and sets `password_present: false`. Redacted reports keep configuration recommendations but avoid describing the placeholder as a generated secret.
 
 `--redact` is rejected unless `--format json` is also used. Plain text output is always the generated password, so this prevents a dangerous false sense that a text password was redacted.
 
@@ -172,7 +173,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON report schema metadata, password presence metadata, redacted JSON reports, invalid text redaction, quiet exports, nested output directories, extension validation, directory target failures, invalid parent-path failures, and output-file overwrite protection.
+The tests cover default output length, custom lengths, disabled character sets, invalid lengths, unknown modes, empty charset failures, readable reports, JSON report schema metadata, actionable recommendations, password presence metadata, redacted JSON reports, invalid text redaction, quiet exports, nested output directories, extension validation, directory target failures, invalid parent-path failures, and output-file overwrite protection.
 
 ## Security notes
 
