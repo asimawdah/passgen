@@ -351,8 +351,10 @@ if (argv.info) {
     console.error(chalk.gray(`\n=== Password Info ===`));
     console.error(chalk.gray(`Mode:      `) + chalk.white(selectedMode ?? "custom"));
     console.error(chalk.gray(`Length:    `) + chalk.white(config.length));
+    console.error(chalk.gray(`Minimum:   `) + chalk.white(enabledSets.length) + chalk.gray(` chars for enabled-set coverage`));
     console.error(chalk.gray(`Charset:   `) + chalk.white(charset.length) + chalk.gray(` chars`));
     console.error(chalk.gray(`Sets:      `) + chalk.white(enabledSetLabels));
+    console.error(chalk.gray(`Required:  `) + chalk.white(`${enabledSets.length} of ${enabledSets.length} sets represented`));
     console.error(chalk.gray(`Coverage:  `) + chalk.white("guaranteed"));
     console.error(chalk.gray(`Entropy:   `) + chalk.white(entropy) + chalk.gray(` bits`));
     console.error(chalk.gray(`Strength:  `) + strengthColor(passStrength));
