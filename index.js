@@ -19,6 +19,19 @@ const OPTION_ALIASES = {
     s: "symbols",
     i: "info",
 };
+const HELP_EPILOGUE = [
+    "Examples:",
+    "  passgen ultra",
+    "  passgen --mode strong",
+    "  passgen --length 20 --no-symbols",
+    "  passgen --length 20 --info",
+    "",
+    "Safe defaults:",
+    "  Default output uses length 12 with lowercase, uppercase, numbers, and symbols.",
+    "  Presets strong and ultra are recommended for important accounts.",
+    "  Generated passwords are printed to stdout; diagnostics and validation hints go to stderr.",
+    "  Treat generated values as secrets and avoid pasting them into logs, issue comments, or screenshots.",
+].join("\n");
 
 function editDistance(a, b) {
     const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
@@ -142,6 +155,8 @@ function fail(message, hint) {
 }
 
 const argv = yargs(normalizedArgs)
+    .scriptName("passgen")
+    .usage("Usage: $0 [preset] [options]")
     .option("length", {
         alias: "l",
         type: "number",
@@ -186,6 +201,7 @@ const argv = yargs(normalizedArgs)
         fail(message, buildParserHint(message));
     })
     .help()
+    .epilogue(HELP_EPILOGUE)
     .argv;
 
 const positionalPresets = argv._.map(String);
@@ -258,7 +274,6 @@ if (argv.mode) {
     config = { ...config, ...presets[argv.mode] };
 }
 
-// override by user (FULL CONTROL)
 if (argv.length !== undefined) config.length = argv.length;
 
 if (!Number.isInteger(config.length) || config.length < MIN_LENGTH || config.length > MAX_LENGTH) {
