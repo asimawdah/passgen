@@ -25,10 +25,11 @@
     "index.js",
     "README.md",
     "SECURITY.md",
-    "docs/CLI_VALIDATION_CONTRACT.md"
+    "docs/CLI_VALIDATION_CONTRACT.md",
+    "docs/CLI_REVIEW_CHECKLIST.md"
   ],
   "scripts": {
-    "test": "node test.js && node test-validation-contract.js"
+    "test": "node test.js && node test-validation-contract.js && node test-cli-review-checklist.js"
   },
   "repository": {
     "type": "git",
