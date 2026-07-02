@@ -17,6 +17,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Ensures every enabled character set appears at least once when the requested length allows it
 - `--info` reports the selected mode, active character sets, minimum coverage length, required represented sets, and whether coverage is guaranteed while keeping the generated password on stdout
 - `--help` includes practical examples and safe-handling reminders so users can discover secure defaults without opening the README
+- Includes a CLI validation contract and review checklist so safety-sensitive changes can be checked before publishing
 - Small single-file implementation for easy auditing and embedding
 
 ## Installation
@@ -199,6 +200,10 @@ When validation fails, passgen prints a short hint after the error so the next a
 
 These hints are written to stderr, while generated passwords remain on stdout. This makes `--info` and validation output safer for scripts that capture only the generated password.
 
+## Review checklist
+
+Safety-sensitive CLI changes should be reviewed against [`docs/CLI_VALIDATION_CONTRACT.md`](docs/CLI_VALIDATION_CONTRACT.md) and [`docs/CLI_REVIEW_CHECKLIST.md`](docs/CLI_REVIEW_CHECKLIST.md). The checklist covers stdout/stderr separation, failed-validation behavior, character-set coverage, option and preset validation, documentation safety, and regression expectations.
+
 ## Testing
 
 Run the CLI smoke tests before publishing or changing generation behavior:
@@ -207,7 +212,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, tailored missing option value hints, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, minimum coverage length diagnostics, represented-set diagnostics, guaranteed coverage diagnostics, and `--help` output for usage, examples, safe defaults, stdout/stderr behavior, and secret-handling reminders.
+The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, tailored missing option value hints, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, minimum coverage length diagnostics, represented-set diagnostics, guaranteed coverage diagnostics, `--help` output for usage, examples, safe defaults, stdout/stderr behavior, secret-handling reminders, the CLI validation contract, and the CLI review checklist guard.
 
 ## Security notes
 
@@ -219,12 +224,6 @@ The tests cover default output length, custom lengths, disabled character sets, 
 
 ## Contributing
 
-Contributions and issues are welcome. Please open an issue or submit a pull request following standard Node.js project conventions. Run the test suite locally using:
-
-```bash
-npm test
-```
-
-## License
-
-MIT — see the `LICENSE` file.
+- Keep generated passwords out of examples, screenshots, logs, and issue comments.
+- Add or update smoke tests when changing CLI parsing, validation, password generation, or output behavior.
+- Update the validation contract and review checklist when changing safety-sensitive CLI behavior.
