@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import crypto from "crypto";
 import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, extname } from "node:path";
@@ -262,6 +261,29 @@ function buildWarnings(report) {
     return warnings;
 }
 
+function buildRecommendations(report) {
+    const recommendations = [];
+
+    if (report.entropy_bits < 80) {
+        recommendations.push("Use `passgen strong` or increase `--length` until entropy is at least 80 bits for important accounts.");
+    }
+    if (!report.enabled_sets.includes("symbols")) {
+        recommendations.push("Enable symbols with `--symbols true` when the target service allows them.");
+    }
+    if (report.length < 14) {
+        recommendations.push("Use at least 14 characters for general accounts and 18+ characters for high-value accounts.");
+    }
+    if (report.password_present) {
+        recommendations.push("Store the generated password directly in a password manager and avoid pasting it into logs, chat, screenshots, or issue comments.");
+    }
+
+    if (recommendations.length === 0) {
+        recommendations.push("This configuration is suitable for typical password-manager storage; keep the generated value out of logs and shell history.");
+    }
+
+    return recommendations;
+}
+
 function buildReport(password) {
     const entropyBits = Number((config.length * Math.log2(charset.length)).toFixed(1));
     const report = {
@@ -280,6 +302,7 @@ function buildReport(password) {
     return {
         ...report,
         warnings: buildWarnings(report),
+        recommendations: buildRecommendations(report),
     };
 }
 
@@ -291,11 +314,16 @@ function buildSerializableReport(report) {
 
     if (!argv.redact) return baseReport;
 
-    return {
+    const redactedReport = {
         ...baseReport,
         password: "[redacted]",
         password_present: false,
         redacted: true,
+    };
+
+    return {
+        ...redactedReport,
+        recommendations: buildRecommendations(redactedReport),
     };
 }
 
@@ -322,6 +350,13 @@ function renderReadableReport(report) {
         lines.push("Warnings:");
         for (const warning of report.warnings) {
             lines.push(`- ${warning}`);
+        }
+    }
+
+    if (report.recommendations.length) {
+        lines.push("Recommendations:");
+        for (const recommendation of report.recommendations) {
+            lines.push(`- ${recommendation}`);
         }
     }
 
