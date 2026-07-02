@@ -16,6 +16,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Normalizes preset casing/spacing and suggests the nearest supported preset or option for common typos
 - Ensures every enabled character set appears at least once when the requested length allows it
 - `--info` reports the selected mode, active character sets, minimum coverage length, required represented sets, and whether coverage is guaranteed while keeping the generated password on stdout
+- `--help` includes practical examples and safe-handling reminders so users can discover secure defaults without opening the README
 - Small single-file implementation for easy auditing and embedding
 
 ## Installation
@@ -54,6 +55,12 @@ Using flags:
 passgen --mode strong
 passgen -l 20 -u true -lc true -n true -s false
 passgen --length 20 --no-symbols
+```
+
+Run built-in help for the supported options, examples, safe defaults, and secret-handling reminders:
+
+```bash
+passgen --help
 ```
 
 ### Flags
@@ -200,7 +207,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, tailored missing option value hints, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, minimum coverage length diagnostics, represented-set diagnostics, and coverage diagnostics.
+The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, tailored missing option value hints, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, minimum coverage length diagnostics, represented-set diagnostics, guaranteed coverage diagnostics, and `--help` output for usage, examples, safe defaults, stdout/stderr behavior, and secret-handling reminders.
 
 ## Security notes
 
