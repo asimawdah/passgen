@@ -144,7 +144,7 @@ Avoid adding generated passwords directly to shell history, CI logs, issue comme
 passgen exits with a non-zero status and writes the error to stderr when:
 
 - `--length` is not an integer between 1 and 4096
-- `--length` is provided without a value
+- `--length` or `--mode` is provided without a value
 - `--length` is shorter than the number of enabled character sets
 - `--mode` or the positional preset is not one of `weak`, `medium`, `strong`, or `ultra` after casing and surrounding whitespace are normalized
 - more than one positional preset is provided, such as `passgen strong ultra`
@@ -161,7 +161,8 @@ When validation fails, passgen prints a short hint after the error so the next a
 | Problem | Example | Suggested fix |
 | --- | --- | --- |
 | Invalid length | `passgen --length 0` | Use an integer in the supported range, such as `passgen --length 20`. |
-| Missing option value | `passgen --length` | Provide a value, for example `passgen --length 20`, or run `passgen --help`. |
+| Missing length value | `passgen --length` | Provide a numeric length, for example `passgen --length 20`, or run `passgen --help`. |
+| Missing mode value | `passgen --mode` | Provide a preset, for example `passgen --mode strong`; supported presets are `weak`, `medium`, `strong`, and `ultra`. |
 | Length too short for enabled sets | `passgen --length 3` | Increase length or disable a character set, such as `passgen --length 3 --symbols false`. |
 | Unknown preset | `passgen maximum` | Use `weak`, `medium`, `strong`, or `ultra`, or run `passgen --help`. |
 | Typoed preset | `passgen --mode streng` | Use the suggested preset when shown, such as `strong`. |
@@ -181,7 +182,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, missing option values, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, and coverage diagnostics.
+The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, tailored missing option value hints, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, and coverage diagnostics.
 
 ## Security notes
 
