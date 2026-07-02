@@ -62,8 +62,18 @@ assert.match(decimalLengthRun.stderr, /Password length must be an integer/);
 const missingLengthValueRun = runPassgen(["--length"]);
 assert.notEqual(missingLengthValueRun.status, 0, "missing length value should fail without generating a password");
 assert.match(missingLengthValueRun.stderr, /Not enough arguments following: length/);
-assert.match(missingLengthValueRun.stderr, /Hint: Provide a value for --length/);
+assert.match(missingLengthValueRun.stderr, /Hint: Provide a numeric length/);
+assert.match(missingLengthValueRun.stderr, /passgen --length 20/);
 assert.equal(missingLengthValueRun.stdout, "", "missing option values should not print a generated password");
+
+const missingModeValueRun = runPassgen(["--mode"]);
+assert.notEqual(missingModeValueRun.status, 0, "missing mode value should fail without generating a password");
+assert.match(missingModeValueRun.stderr, /Not enough arguments following: mode/);
+assert.match(missingModeValueRun.stderr, /Hint: Provide a preset for --mode/);
+assert.match(missingModeValueRun.stderr, /passgen --mode strong/);
+assert.match(missingModeValueRun.stderr, /weak, medium, strong, ultra/);
+assert.doesNotMatch(missingModeValueRun.stderr, /--mode 20/);
+assert.equal(missingModeValueRun.stdout, "", "missing mode values should not print a generated password");
 
 const tooShortForSetsRun = runPassgen(["--length", "3"]);
 assert.notEqual(tooShortForSetsRun.status, 0, "length shorter than enabled character sets should fail");
