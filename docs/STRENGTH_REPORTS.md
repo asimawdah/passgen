@@ -19,6 +19,7 @@ The report is written to stderr and includes:
 - estimated entropy in bits
 - strength label
 - warnings for short length, low entropy, or disabled symbols
+- actionable recommendations for safer configuration and storage
 
 stdout still contains only the generated value, so existing shell scripts can continue to capture the command output.
 
@@ -30,9 +31,11 @@ Use JSON when another local tool needs both the generated value and the metadata
 passgen ultra --format json
 ```
 
-Fields include `schema_version`, `generated_at`, `password`, `password_present`, `preset`, `length`, `charset_size`, `enabled_sets`, `entropy_bits`, `strength`, `warnings`, and `redacted`.
+Fields include `schema_version`, `generated_at`, `password`, `password_present`, `preset`, `length`, `charset_size`, `enabled_sets`, `entropy_bits`, `strength`, `warnings`, `recommendations`, and `redacted`.
 
-`schema_version` is currently `2` and gives scripts a stable contract to check before parsing report fields. `generated_at` is an ISO-8601 UTC timestamp that can be used in local audit trails. `redacted` is always present so automation can safely distinguish full reports from redacted reports. `password_present` is also always present so automation can tell whether the `password` field contains a generated secret or only a placeholder.
+`schema_version` is currently `2` and gives scripts a stable contract to check before parsing report fields. `generated_at` is an ISO-8601 UTC timestamp that can be used in local audit trails. `warnings` describe detected risks, and `recommendations` gives downstream tools a stable list of practical next steps to show in UI, logs, or review screens. `redacted` is always present so automation can safely distinguish full reports from redacted reports. `password_present` is also always present so automation can tell whether the `password` field contains a generated secret or only a placeholder.
+
+Recommendations are intentionally separate from warnings. A weak configuration can include warnings and direct remediation such as using `passgen strong`, increasing `--length`, or enabling symbols. A strong configuration still includes a safe-handling reminder so JSON consumers always have at least one user-facing next step.
 
 ## Redacted JSON output
 
@@ -42,7 +45,7 @@ Use `--redact` when the JSON metadata needs to be reviewed, attached to a bug re
 passgen ultra --format json --redact
 ```
 
-The redacted report keeps the strength metadata, replaces `password` with `[redacted]`, sets `redacted: true`, and sets `password_present: false` so downstream tooling can tell that the generated value is not included.
+The redacted report keeps the strength metadata, replaces `password` with `[redacted]`, sets `redacted: true`, and sets `password_present: false` so downstream tooling can tell that the generated value is not included. Redacted recommendations keep configuration guidance but avoid claiming that the redacted placeholder should be stored as a generated secret.
 
 `--redact` requires `--format json`. Plain text output always contains the generated password, so passgen rejects `--redact` in text mode instead of silently printing an unredacted secret.
 
