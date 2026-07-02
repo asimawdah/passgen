@@ -15,7 +15,7 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Supports explicit boolean disabling with either `--symbols false` or standard negated flags such as `--no-symbols`
 - Normalizes preset casing/spacing and suggests the nearest supported preset or option for common typos
 - Ensures every enabled character set appears at least once when the requested length allows it
-- `--info` reports the selected mode, active character sets, and whether coverage is guaranteed while keeping the generated password on stdout
+- `--info` reports the selected mode, active character sets, minimum coverage length, required represented sets, and whether coverage is guaranteed while keeping the generated password on stdout
 - Small single-file implementation for easy auditing and embedding
 
 ## Installation
@@ -64,7 +64,7 @@ passgen --length 20 --no-symbols
 - `-n`, `--numbers` / `--no-numbers` (boolean): Include digits
 - `-s`, `--symbols` / `--no-symbols` (boolean): Include symbols
 - `--mode` (string): Preset mode — `weak | medium | strong | ultra`
-- `-i`, `--info` (boolean): Show password strength, entropy, selected mode, enabled-set, and coverage info
+- `-i`, `--info` (boolean): Show password strength, entropy, selected mode, enabled sets, coverage minimum, required sets, and coverage status
 
 ## Examples
 
@@ -116,11 +116,29 @@ The diagnostics include:
 
 - `Mode`: selected preset, or `custom` when no preset was used
 - `Length`: requested output length
+- `Minimum`: shortest allowed length for the currently enabled sets
 - `Charset`: size of the active character pool
 - `Sets`: enabled sets, such as `lowercase, uppercase, numbers, symbols`
+- `Required`: how many enabled sets are represented in every generated password
 - `Coverage`: `guaranteed` when every enabled set is represented at least once
 - `Entropy`: estimated entropy in bits
 - `Strength`: readable strength bucket
+
+Example diagnostic shape:
+
+```text
+=== Password Info ===
+Mode:      custom
+Length:    20
+Minimum:   4 chars for enabled-set coverage
+Charset:   86 chars
+Sets:      lowercase, uppercase, numbers, symbols
+Required:  4 of 4 sets represented
+Coverage:  guaranteed
+Entropy:   128.5 bits
+Strength:  Ultra
+=====================
+```
 
 ## Shell-safe usage
 
@@ -182,7 +200,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, tailored missing option value hints, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, and coverage diagnostics.
+The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, tailored missing option value hints, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, minimum coverage length diagnostics, represented-set diagnostics, and coverage diagnostics.
 
 ## Security notes
 
