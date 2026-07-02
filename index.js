@@ -8,6 +8,133 @@ import chalk from "chalk";
 const rawArgs = hideBin(process.argv);
 const MIN_LENGTH = 1;
 const MAX_LENGTH = 4096;
+const BOOLEAN_OPTIONS = ["upper", "lower", "numbers", "symbols"];
+const SUPPORTED_OPTIONS = ["length", ...BOOLEAN_OPTIONS, ...BOOLEAN_OPTIONS.map((option) => `no-${option}`), "mode", "info", "help"];
+const SUPPORTED_MODES = ["weak", "medium", "strong", "ultra"];
+const OPTION_ALIASES = {
+    l: "length",
+    u: "upper",
+    lc: "lower",
+    n: "numbers",
+    s: "symbols",
+    i: "info",
+};
+const HELP_EPILOGUE = [
+    "Examples:",
+    "  passgen ultra",
+    "  passgen --mode strong",
+    "  passgen --length 20 --no-symbols",
+    "  passgen --length 20 --info",
+    "",
+    "Safe defaults:",
+    "  Default output uses length 12 with lowercase, uppercase, numbers, and symbols.",
+    "  Presets strong and ultra are recommended for important accounts.",
+    "  Generated passwords are printed to stdout; diagnostics and validation hints go to stderr.",
+    "  Treat generated values as secrets and avoid pasting them into logs, issue comments, or screenshots.",
+].join("\n");
+
+function editDistance(a, b) {
+    const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+
+    for (let i = 0; i <= a.length; i += 1) dp[i][0] = i;
+    for (let j = 0; j <= b.length; j += 1) dp[0][j] = j;
+
+    for (let i = 1; i <= a.length; i += 1) {
+        for (let j = 1; j <= b.length; j += 1) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+                dp[i - 1][j] + 1,
+                dp[i][j - 1] + 1,
+                dp[i - 1][j - 1] + cost,
+            );
+        }
+    }
+
+    return dp[a.length][b.length];
+}
+
+function suggestChoice(value, supportedValues, maxDistance = 2) {
+    if (!value) return null;
+
+    const normalized = value.trim().toLowerCase();
+    let best = null;
+
+    for (const supportedValue of supportedValues) {
+        const distance = editDistance(normalized, supportedValue);
+        if (!best || distance < best.distance) {
+            best = { value: supportedValue, distance };
+        }
+    }
+
+    return best && best.distance <= maxDistance ? best.value : null;
+}
+
+function suggestOption(option) {
+    if (!option) return null;
+
+    const normalized = option.replace(/^-+/, "").trim().toLowerCase();
+    if (normalized.startsWith("no-")) {
+        const suggestion = suggestChoice(normalized.slice(3), BOOLEAN_OPTIONS);
+        return suggestion ? `no-${suggestion}` : null;
+    }
+
+    return suggestChoice(normalized, SUPPORTED_OPTIONS);
+}
+
+function buildModeHint(mode) {
+    const suggestion = suggestChoice(mode, SUPPORTED_MODES);
+
+    return suggestion
+        ? `Did you mean "${suggestion}"? Use one of: ${SUPPORTED_MODES.join(", ")}.`
+        : `Use one of: ${SUPPORTED_MODES.join(", ")}, or run \`passgen --help\`.`;
+}
+
+function extractUnknownOption(message) {
+    const match = message.match(/Unknown arguments?:\s+([^,\s]+)/i);
+    return match ? match[1].replace(/^--?/, "") : null;
+}
+
+function extractMissingValueOption(message) {
+    const match = message.match(/Not enough arguments following:\s+([^\s]+)/i);
+    return match ? match[1].replace(/^--?/, "") : null;
+}
+
+function normalizeOptionName(option) {
+    const normalized = option.replace(/^-+/, "").trim().toLowerCase();
+    return OPTION_ALIASES[normalized] ?? normalized;
+}
+
+function buildMissingValueHint(option) {
+    const normalized = normalizeOptionName(option);
+
+    if (normalized === "length") {
+        return "Provide a numeric length, for example `passgen --length 20`, or run `passgen --help`.";
+    }
+
+    if (normalized === "mode") {
+        return `Provide a preset for --mode, for example \`passgen --mode strong\`. Supported presets: ${SUPPORTED_MODES.join(", ")}.`;
+    }
+
+    if (BOOLEAN_OPTIONS.includes(normalized)) {
+        return `Provide true or false for --${normalized}, or use --${normalized}/--no-${normalized} without a value.`;
+    }
+
+    return `Provide a value for --${normalized}, or run \`passgen --help\`.`;
+}
+
+function buildParserHint(message) {
+    const missingValueOption = extractMissingValueOption(message);
+    if (missingValueOption) {
+        return buildMissingValueHint(missingValueOption);
+    }
+
+    const unknownOption = extractUnknownOption(message);
+    const suggestion = suggestOption(unknownOption);
+
+    return suggestion
+        ? `Did you mean --${suggestion}? Run \`passgen --help\` to see supported options and examples.`
+        : "Run `passgen --help` to see supported options and examples.";
+}
 
 // normalize args: convert single-dash multi-letter flags (e.g. `-lc`) to
 // double-dash form (`--lc`) so users can type `-lc false` as they did.
@@ -19,7 +146,17 @@ const normalizedArgs = rawArgs.map((arg) => {
     return arg;
 });
 
+function fail(message, hint) {
+    console.error(chalk.red(`❌ ${message}`));
+    if (hint) {
+        console.error(chalk.gray(`Hint: ${hint}`));
+    }
+    process.exit(1);
+}
+
 const argv = yargs(normalizedArgs)
+    .scriptName("passgen")
+    .usage("Usage: $0 [preset] [options]")
     .option("length", {
         alias: "l",
         type: "number",
@@ -59,13 +196,38 @@ const argv = yargs(normalizedArgs)
         default: false,
         describe: "Show password strength and entropy info",
     })
+    .strictOptions()
+    .fail((message) => {
+        fail(message, buildParserHint(message));
+    })
     .help()
+    .epilogue(HELP_EPILOGUE)
     .argv;
 
+const positionalPresets = argv._.map(String);
+if (positionalPresets.length > 1) {
+    fail(
+        `Unexpected positional arguments: ${positionalPresets.slice(1).join(", ")}`,
+        "Use at most one positional preset, such as `passgen ultra`, or run `passgen --help`.",
+    );
+}
+
+if (positionalPresets.length === 1 && argv.mode) {
+    fail(
+        "Use either a positional preset or --mode, not both",
+        "Use `passgen ultra` or `passgen --mode ultra`, not both forms in the same command.",
+    );
+}
+
 // support positional preset (e.g., `node index.js ultra`)
-const firstPositional = normalizedArgs.find((a) => !a.startsWith("-"));
+const firstPositional = positionalPresets[0];
+let selectedMode = null;
 if (firstPositional && !argv.mode) {
-    argv.mode = firstPositional;
+    selectedMode = firstPositional.trim().toLowerCase();
+    argv.mode = selectedMode;
+} else if (argv.mode) {
+    selectedMode = argv.mode.trim().toLowerCase();
+    argv.mode = selectedMode;
 }
 
 // ---------------- presets ----------------
@@ -84,6 +246,13 @@ const sets = {
     symbols: "!@#$%^&*()-_=+[]{}<>?/|",
 };
 
+const setLabels = {
+    lower: "lowercase",
+    upper: "uppercase",
+    numbers: "numbers",
+    symbols: "symbols",
+};
+
 // ---------------- merge config ----------------
 let config = {
     length: 12,
@@ -96,19 +265,22 @@ let config = {
 // apply preset first
 if (argv.mode) {
     if (!Object.hasOwn(presets, argv.mode)) {
-        console.error(chalk.red(`❌ Unknown mode "${argv.mode}". Use one of: ${Object.keys(presets).join(", ")}`));
-        process.exit(1);
+        fail(
+            `Unknown mode "${argv.mode}". Use one of: ${SUPPORTED_MODES.join(", ")}`,
+            buildModeHint(argv.mode),
+        );
     }
 
     config = { ...config, ...presets[argv.mode] };
 }
 
-// override by user (FULL CONTROL)
 if (argv.length !== undefined) config.length = argv.length;
 
 if (!Number.isInteger(config.length) || config.length < MIN_LENGTH || config.length > MAX_LENGTH) {
-    console.error(chalk.red(`❌ Password length must be an integer between ${MIN_LENGTH} and ${MAX_LENGTH}`));
-    process.exit(1);
+    fail(
+        `Password length must be an integer between ${MIN_LENGTH} and ${MAX_LENGTH}`,
+        "Use `--length 20` or a preset such as `passgen strong`.",
+    );
 }
 
 if (argv.upper !== undefined) config.upper = argv.upper;
@@ -117,28 +289,55 @@ if (argv.numbers !== undefined) config.numbers = argv.numbers;
 if (argv.symbols !== undefined) config.symbols = argv.symbols;
 
 // ---------------- build charset ----------------
+const enabledSets = [];
 let charset = "";
 
-if (config.lower) charset += sets.lower;
-if (config.upper) charset += sets.upper;
-if (config.numbers) charset += sets.numbers;
-if (config.symbols) charset += sets.symbols;
+for (const [name, chars] of Object.entries(sets)) {
+    if (config[name]) {
+        enabledSets.push({ name, label: setLabels[name], chars });
+        charset += chars;
+    }
+}
 
 if (!charset) {
-    console.error(chalk.red("❌ No character sets enabled"));
-    process.exit(1);
+    fail(
+        "No character sets enabled",
+        "Enable at least one of --lower, --upper, --numbers, or --symbols.",
+    );
+}
+
+if (config.length < enabledSets.length) {
+    const enabledNames = enabledSets.map((set) => set.label).join(", ");
+    fail(
+        `Password length ${config.length} is too short for ${enabledSets.length} enabled character sets (${enabledNames})`,
+        `Use --length ${enabledSets.length} or disable character sets you do not need.`,
+    );
+}
+
+function randomChar(chars) {
+    return chars[crypto.randomInt(0, chars.length)];
+}
+
+function shuffle(chars) {
+    const shuffled = [...chars];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+        const j = crypto.randomInt(0, i + 1);
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.join("");
 }
 
 // ---------------- secure generator ----------------
 function generate(len) {
-    let pass = "";
+    const requiredChars = enabledSets.map((set) => randomChar(set.chars));
+    const remainingLength = len - requiredChars.length;
+    const remainingChars = [];
 
-    for (let i = 0; i < len; i++) {
-        const idx = crypto.randomInt(0, charset.length);
-        pass += charset[idx];
+    for (let i = 0; i < remainingLength; i += 1) {
+        remainingChars.push(randomChar(charset));
     }
 
-    return pass;
+    return shuffle([...requiredChars, ...remainingChars]);
 }
 
 // ---------------- entropy ----------------
@@ -157,6 +356,7 @@ const result = generate(config.length);
 if (argv.info) {
     const entropy = (config.length * Math.log2(charset.length)).toFixed(1);
     const passStrength = strength(config.length, charset.length);
+    const enabledSetLabels = enabledSets.map((set) => set.label).join(", ");
 
     let strengthColor = chalk.green;
     if (passStrength === "Weak") strengthColor = chalk.red;
@@ -164,8 +364,13 @@ if (argv.info) {
     else if (passStrength === "Ultra") strengthColor = chalk.cyan;
 
     console.error(chalk.gray(`\n=== Password Info ===`));
+    console.error(chalk.gray(`Mode:      `) + chalk.white(selectedMode ?? "custom"));
     console.error(chalk.gray(`Length:    `) + chalk.white(config.length));
+    console.error(chalk.gray(`Minimum:   `) + chalk.white(enabledSets.length) + chalk.gray(` chars for enabled-set coverage`));
     console.error(chalk.gray(`Charset:   `) + chalk.white(charset.length) + chalk.gray(` chars`));
+    console.error(chalk.gray(`Sets:      `) + chalk.white(enabledSetLabels));
+    console.error(chalk.gray(`Required:  `) + chalk.white(`${enabledSets.length} of ${enabledSets.length} sets represented`));
+    console.error(chalk.gray(`Coverage:  `) + chalk.white("guaranteed"));
     console.error(chalk.gray(`Entropy:   `) + chalk.white(entropy) + chalk.gray(` bits`));
     console.error(chalk.gray(`Strength:  `) + strengthColor(passStrength));
     console.error(chalk.gray(`=====================\n`));
