@@ -165,4 +165,16 @@ assert.match(lowerOnlyInfoRun.stderr, /Sets:\s+lowercase/);
 assert.match(lowerOnlyInfoRun.stderr, /Required:\s+1 of 1 sets represented/);
 assert.doesNotMatch(lowerOnlyInfoRun.stderr, /uppercase, numbers, symbols/);
 
+const helpRun = runPassgen(["--help"]);
+assert.equal(helpRun.status, 0, helpRun.stderr);
+assert.match(helpRun.stdout, /Usage: passgen \[preset\] \[options\]/);
+assert.match(helpRun.stdout, /Examples:/);
+assert.match(helpRun.stdout, /passgen ultra/);
+assert.match(helpRun.stdout, /passgen --length 20 --no-symbols/);
+assert.match(helpRun.stdout, /Safe defaults:/);
+assert.match(helpRun.stdout, /Default output uses length 12/);
+assert.match(helpRun.stdout, /Generated passwords are printed to stdout/);
+assert.match(helpRun.stdout, /Treat generated values as secrets/);
+assert.equal(helpRun.stderr, "", "help output should stay on stdout for CLI discoverability");
+
 console.log("passgen CLI smoke tests passed");
