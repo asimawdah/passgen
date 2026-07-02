@@ -24,6 +24,8 @@ function assertReportSchema(report, expectedLength) {
   assert.ok(["Weak", "Medium", "Strong", "Ultra"].includes(report.strength));
   assert.ok(Array.isArray(report.enabled_sets));
   assert.ok(Array.isArray(report.warnings));
+  assert.ok(Array.isArray(report.recommendations), "reports should include actionable recommendations");
+  assert.ok(report.recommendations.length >= 1, "reports should always include at least one next-step recommendation");
   assert.equal(typeof report.redacted, "boolean", "JSON reports should make redaction state explicit");
   assert.equal(typeof report.password_present, "boolean", "JSON reports should say whether password contains a generated secret");
 }
@@ -79,6 +81,8 @@ assert.equal(reportRun.stdout.trim().length, 18, "--report should keep stdout sc
 assert.match(reportRun.stderr, /Password Strength Report/);
 assert.match(reportRun.stderr, /Entropy:/);
 assert.match(reportRun.stderr, /Strength:/);
+assert.match(reportRun.stderr, /Recommendations:/);
+assert.match(reportRun.stderr, /password manager|suitable for typical password-manager storage/);
 
 const jsonRun = runPassgen(["--length", "16", "--format", "json"]);
 assert.equal(jsonRun.status, 0, jsonRun.stderr);
@@ -87,6 +91,14 @@ assert.equal(jsonReport.password.length, 16, "JSON output should include the gen
 assertReportSchema(jsonReport, 16);
 assert.equal(jsonReport.redacted, false);
 assert.equal(jsonReport.password_present, true, "full JSON output should mark that the generated password is present");
+assert.match(jsonReport.recommendations.join("\n"), /password manager|entropy|symbols/, "JSON recommendations should be practical and actionable");
+
+const weakJsonRun = runPassgen(["weak", "--format", "json"]);
+assert.equal(weakJsonRun.status, 0, weakJsonRun.stderr);
+const weakJsonReport = JSON.parse(weakJsonRun.stdout);
+assertReportSchema(weakJsonReport, 10);
+assert.match(weakJsonReport.recommendations.join("\n"), /passgen strong/);
+assert.match(weakJsonReport.recommendations.join("\n"), /symbols true/);
 
 const redactedJsonRun = runPassgen(["--length", "16", "--format", "json", "--redact"]);
 assert.equal(redactedJsonRun.status, 0, redactedJsonRun.stderr);
@@ -95,6 +107,7 @@ assert.equal(redactedJsonReport.password, "[redacted]", "--redact should remove 
 assertReportSchema(redactedJsonReport, 16);
 assert.equal(redactedJsonReport.redacted, true);
 assert.equal(redactedJsonReport.password_present, false, "redacted JSON output should mark that no generated password is present");
+assert.doesNotMatch(redactedJsonReport.recommendations.join("\n"), /generated password directly/, "redacted recommendations should not describe the placeholder as a generated secret");
 
 const tempDir = mkdtempSync(join(tmpdir(), "passgen-test-"));
 try {
