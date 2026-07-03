@@ -32,3 +32,22 @@ jobs:
 
       - name: Validate CLI syntax
         run: node --check index.js
+
+      - name: Run CLI smoke tests
+        run: |
+          set -o pipefail
+          node test.js 2>&1 | tee cli-smoke-test.log
+
+      - name: Upload CLI smoke test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-smoke-test-node-${{ matrix.node-version }}
+          path: cli-smoke-test.log
+          if-no-files-found: ignore
+
+      - name: Run validation contract checks
+        run: node test-validation-contract.js
+
+      - name: Run review checklist checks
+        run: node test-cli-review-checklist.js

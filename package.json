@@ -26,7 +26,8 @@
     "README.md",
     "SECURITY.md",
     "docs/CLI_VALIDATION_CONTRACT.md",
-    "docs/CLI_REVIEW_CHECKLIST.md"
+    "docs/CLI_REVIEW_CHECKLIST.md",
+    "docs/STRENGTH_REPORTS.md"
   ],
   "scripts": {
     "test": "node test.js && node test-validation-contract.js && node test-cli-review-checklist.js"
@@ -44,6 +45,6 @@
   },
   "dependencies": {
     "chalk": "^5.6.2",
-    "yargs": "^18.0.0"
+    "yargs": "^17.7.2"
   }
 }
