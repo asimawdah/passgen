@@ -35,7 +35,8 @@ jobs:
 
       - name: Run CLI smoke tests
         run: |
-          node test.js > cli-smoke-test.log 2>&1
+          set -o pipefail
+          node test.js 2>&1 | tee cli-smoke-test.log
 
       - name: Upload CLI smoke test log
         if: always()
