@@ -39,7 +39,7 @@ function assertReportSchema(report, expectedLength) {
 const defaultRun = runPassgen();
 assertPasswordLength(defaultRun, 12, "default password should be 12 characters long");
 
-const customLengthRun = runPassgen(["--length", "20", "--symbols", "false"]);
+const customLengthRun = runPassgen(["--length", "20", "--no-symbols"]);
 assertPasswordLength(customLengthRun, 20, "custom length should be respected");
 assert.doesNotMatch(customLengthRun.stdout.trim(), SYMBOL_PATTERN, "symbols should be excluded when disabled");
 
@@ -51,7 +51,7 @@ assertPasswordLength(runPassgen(["ultra"]), 32, "ultra positional preset should 
 assertPasswordLength(runPassgen(["ULTRA"]), 32, "uppercase positional presets should normalize");
 assertPasswordLength(runPassgen(["--mode", " strong "]), 18, "padded --mode values should normalize");
 
-const lowerOnlyRun = runPassgen(["--upper", "false", "--numbers", "false", "--symbols", "false"]);
+const lowerOnlyRun = runPassgen(["--no-upper", "--no-numbers", "--no-symbols"]);
 assert.equal(lowerOnlyRun.status, 0, lowerOnlyRun.stderr);
 assert.match(lowerOnlyRun.stdout.trim(), /^[a-z]+$/, "lower-only options should restrict the character set");
 
@@ -116,7 +116,7 @@ for (const args of [["--lenght", "20"], ["-lenght", "20"], ["--password-size", "
   assert.equal(run.stdout, "", "unknown option validation should not print a password");
 }
 
-const noCharsetRun = runPassgen(["--upper", "false", "--lower", "false", "--numbers", "false", "--symbols", "false"]);
+const noCharsetRun = runPassgen(["--no-upper", "--no-lower", "--no-numbers", "--no-symbols"]);
 assert.notEqual(noCharsetRun.status, 0, "disabling every character set should fail");
 assert.match(noCharsetRun.stderr, /No character sets enabled/);
 assert.equal(noCharsetRun.stdout, "", "empty charset validation should not print a password");
