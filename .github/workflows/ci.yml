@@ -33,5 +33,11 @@ jobs:
       - name: Validate CLI syntax
         run: node --check index.js
 
-      - name: Run smoke tests
-        run: npm test
+      - name: Run CLI smoke tests
+        run: node test.js
+
+      - name: Run validation contract checks
+        run: node test-validation-contract.js
+
+      - name: Run review checklist checks
+        run: node test-cli-review-checklist.js
