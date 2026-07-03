@@ -8,6 +8,8 @@ Security fixes should target the latest release and the `main` branch. Older ver
 
 ## Reporting a vulnerability
 
+Do not paste generated passwords into GitHub issues, issue comments, pull requests, screenshots, CI logs, shell history, or public chat messages.
+
 Please do not open a public issue with a real generated password, token, private key, or account credential.
 
 Open a GitHub issue with a minimal reproduction that uses placeholders such as `<generated-password>`, or contact the maintainer through the repository profile if private coordination is needed.
