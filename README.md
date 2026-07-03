@@ -16,6 +16,9 @@ passgen is a compact Node.js CLI that produces cryptographically secure password
 - Normalizes preset casing/spacing and suggests the nearest supported preset or option for common typos
 - Ensures every enabled character set appears at least once when the requested length allows it
 - `--info` reports the selected mode, active character sets, minimum coverage length, required represented sets, and whether coverage is guaranteed while keeping the generated password on stdout
+- `--report` prints a readable strength report to stderr while keeping generated passwords script-friendly on stdout
+- `--format json` emits structured report metadata for automation, with optional `--redact` for shareable metadata
+- `--output` writes text or JSON output to a local file with overwrite protection and owner-only permissions where supported
 - `--help` includes practical examples and safe-handling reminders so users can discover secure defaults without opening the README
 - Includes a CLI validation contract and review checklist so safety-sensitive changes can be checked before publishing
 - Small single-file implementation for easy auditing and embedding
@@ -73,6 +76,12 @@ passgen --help
 - `-s`, `--symbols` / `--no-symbols` (boolean): Include symbols
 - `--mode` (string): Preset mode — `weak | medium | strong | ultra`
 - `-i`, `--info` (boolean): Show password strength, entropy, selected mode, enabled sets, coverage minimum, required sets, and coverage status
+- `-r`, `--report` (boolean): Show a readable strength report on stderr
+- `--format` (string): Output format — `text | json`
+- `-o`, `--output` (path): Write the generated text output or JSON report to a file
+- `--redact` (boolean): Redact the generated password from JSON output and JSON exports
+- `--force` (boolean): Overwrite an existing output file
+- `-q`, `--quiet` (boolean): Suppress stdout when writing output to a file
 
 ## Examples
 
@@ -97,7 +106,39 @@ passgen --length 24 --no-upper --no-lower --no-symbols
 
 # Print the password on stdout and diagnostics on stderr
 passgen --length 20 --info
+
+# Print a readable strength report to stderr
+passgen strong --report
+
+# Emit structured JSON metadata
+passgen ultra --format json
+
+# Shareable metadata without exposing the generated secret
+passgen ultra --format json --redact
+
+# Write output to a file and suppress stdout
+passgen --length 20 --output ./password.txt --quiet
 ```
+
+## Strength reports and exports
+
+`--report` and `--info` keep generated passwords on stdout and write diagnostics to stderr. This means scripts can still capture only the password while humans can inspect strength metadata.
+
+Readable reports include the preset, length, charset size, represented character sets, coverage status, entropy, strength, warnings, and recommendations.
+
+JSON output uses `schema_version: 2` and includes metadata such as `generated_at`, `password_present`, `redacted`, `enabled_sets`, `entropy_bits`, `strength`, `warnings`, and `recommendations`.
+
+Use `--redact` with `--format json` when a report needs to be shared in an issue, pull request, chat, or log without exposing the generated secret.
+
+File export rules:
+
+- text output must use `.txt`
+- JSON output must use `.json`
+- existing files are protected unless `--force` is used
+- parent directories are created when missing
+- directory targets and invalid parent paths fail before output is written
+
+See [`docs/STRENGTH_REPORTS.md`](docs/STRENGTH_REPORTS.md) for the full report and export contract.
 
 ## Character-set coverage
 
@@ -177,6 +218,9 @@ passgen exits with a non-zero status and writes the error to stderr when:
 - a positional preset is mixed with `--mode`, such as `passgen --mode strong ultra`
 - all character sets are disabled at the same time
 - an unknown option is provided, such as a typo in `--length` or `--no-symbols`
+- `--redact` is used without `--format json`
+- `--quiet` is used without `--output`
+- `--output` points to an unsafe or mismatched target
 
 This keeps automation and scripts safer because invalid input fails loudly instead of producing surprising output.
 
@@ -212,7 +256,7 @@ Run the CLI smoke tests before publishing or changing generation behavior:
 npm test
 ```
 
-The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, tailored missing option value hints, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, minimum coverage length diagnostics, represented-set diagnostics, guaranteed coverage diagnostics, `--help` output for usage, examples, safe defaults, stdout/stderr behavior, secret-handling reminders, the CLI validation contract, and the CLI review checklist guard.
+The tests cover default output length, custom lengths, disabled character sets, `--no-*` boolean flags, required enabled-set coverage, invalid lengths, tailored missing option value hints, too-short character-set coverage failures, preset normalization, typoed preset hints, unknown modes, extra positional arguments, mixed preset styles, unknown options, typoed negated option hints, empty charset failures, validation recovery hints, `--info` output separation between stdout and stderr, selected-mode diagnostics, enabled-set diagnostics, minimum coverage length diagnostics, represented-set diagnostics, guaranteed coverage diagnostics, `--help` output for usage, examples, safe defaults, stdout/stderr behavior, secret-handling reminders, report output, JSON metadata, redacted reports, safe exports, the CLI validation contract, and the CLI review checklist guard.
 
 ## Security notes
 
@@ -221,6 +265,7 @@ The tests cover default output length, custom lengths, disabled character sets, 
 - Avoid piping passwords through logs or unencrypted channels.
 - Prefer long passwords generated with the `strong` or `ultra` preset for important accounts.
 - Treat generated passwords as secrets immediately; do not paste real outputs into GitHub issues, pull requests, CI logs, or screenshots.
+- Prefer redacted JSON when sharing strength metadata outside a local trusted environment.
 
 ## Contributing
 
