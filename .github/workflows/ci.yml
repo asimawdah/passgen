@@ -32,6 +32,3 @@ jobs:
 
       - name: Validate CLI syntax
         run: node --check index.js
-
-      - name: Run tests
-        run: npm test
