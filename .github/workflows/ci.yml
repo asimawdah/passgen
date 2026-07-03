@@ -34,7 +34,16 @@ jobs:
         run: node --check index.js
 
       - name: Run CLI smoke tests
-        run: node test.js
+        run: |
+          node test.js > cli-smoke-test.log 2>&1
+
+      - name: Upload CLI smoke test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-smoke-test-node-${{ matrix.node-version }}
+          path: cli-smoke-test.log
+          if-no-files-found: ignore
 
       - name: Run validation contract checks
         run: node test-validation-contract.js
