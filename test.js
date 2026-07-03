@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const cliPath = join(__dirname, "index.js");
+const SYMBOL_PATTERN = /[!@#$%^&*()\-_=+\[\]{}<>?\/|]/;
 
 function runPassgen(args = []) {
   return spawnSync(process.execPath, [cliPath, ...args], {
@@ -40,11 +41,11 @@ assertPasswordLength(defaultRun, 12, "default password should be 12 characters l
 
 const customLengthRun = runPassgen(["--length", "20", "--symbols", "false"]);
 assertPasswordLength(customLengthRun, 20, "custom length should be respected");
-assert.doesNotMatch(customLengthRun.stdout.trim(), /[!@#$%^&*()\-_=+\[\]{}<>?/|]/, "symbols should be excluded when disabled");
+assert.doesNotMatch(customLengthRun.stdout.trim(), SYMBOL_PATTERN, "symbols should be excluded when disabled");
 
 const noSymbolsRun = runPassgen(["--length", "20", "--no-symbols"]);
 assertPasswordLength(noSymbolsRun, 20, "negated boolean flags should be supported");
-assert.doesNotMatch(noSymbolsRun.stdout.trim(), /[!@#$%^&*()\-_=+\[\]{}<>?/|]/, "--no-symbols should exclude symbols");
+assert.doesNotMatch(noSymbolsRun.stdout.trim(), SYMBOL_PATTERN, "--no-symbols should exclude symbols");
 
 assertPasswordLength(runPassgen(["ultra"]), 32, "ultra positional preset should generate 32 characters");
 assertPasswordLength(runPassgen(["ULTRA"]), 32, "uppercase positional presets should normalize");
@@ -59,7 +60,7 @@ assert.equal(allSetsMinimumRun.status, 0, allSetsMinimumRun.stderr);
 assert.match(allSetsMinimumRun.stdout.trim(), /[a-z]/, "enabled lowercase set should be represented");
 assert.match(allSetsMinimumRun.stdout.trim(), /[A-Z]/, "enabled uppercase set should be represented");
 assert.match(allSetsMinimumRun.stdout.trim(), /[0-9]/, "enabled numbers set should be represented");
-assert.match(allSetsMinimumRun.stdout.trim(), /[!@#$%^&*()\-_=+\[\]{}<>?/|]/, "enabled symbols set should be represented");
+assert.match(allSetsMinimumRun.stdout.trim(), SYMBOL_PATTERN, "enabled symbols set should be represented");
 
 const invalidLengthRun = runPassgen(["--length", "0"]);
 assert.notEqual(invalidLengthRun.status, 0, "zero length should fail");
